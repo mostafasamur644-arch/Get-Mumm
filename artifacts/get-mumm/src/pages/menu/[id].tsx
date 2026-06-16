@@ -1,14 +1,41 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
-import { PageWrapper, fadeInUp, staggerContainer, staggerItem } from "@/components/layout/PageWrapper";
-import { useGetMenuItem, getGetMenuItemQueryKey } from "@workspace/api-client-react";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { useGetMenuItem, useListMenuItems, getGetMenuItemQueryKey } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag, Clock, Star } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag,
+  Clock, Star, ChefHat, Leaf, Wheat, Flame, ChevronRight,
+} from "lucide-react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSEO } from "@/hooks/useSEO";
+import { motion, AnimatePresence } from "framer-motion";
+
+const ease = [0.22, 1, 0.36, 1] as const;
+
+const DIETARY_CONFIG: Record<string, { icon: React.ReactNode; labelEn: string; labelAr: string; className: string }> = {
+  vegan:       { icon: <Leaf className="w-3 h-3" />,  labelEn: "Vegan",       labelAr: "نباتي",        className: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" },
+  "gluten-free":{ icon: <Wheat className="w-3 h-3" />, labelEn: "Gluten Free", labelAr: "خالي من الجلوتين", className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
+  spicy:       { icon: <Flame className="w-3 h-3" />, labelEn: "Spicy",       labelAr: "حار",          className: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" },
+};
+
+function DietaryBadge({ diet, isRtl }: { diet: string; isRtl: boolean }) {
+  const cfg = DIETARY_CONFIG[diet];
+  if (!cfg) return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border bg-muted text-muted-foreground border-border">
+      {diet}
+    </span>
+  );
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${cfg.className}`}>
+      {cfg.icon}
+      {isRtl ? cfg.labelAr : cfg.labelEn}
+    </span>
+  );
+}
 
 export default function MenuItemPage() {
   const { id } = useParams();
@@ -21,26 +48,36 @@ export default function MenuItemPage() {
     query: { enabled: !!id, queryKey: getGetMenuItemQueryKey(Number(id)) }
   });
 
-  useSEO(
-    item
-      ? {
-          title: isRtl ? item.nameAr : item.name,
-          description: isRtl ? item.descriptionAr : item.description,
-        }
-      : {}
-  );
+  const { data: allItems } = useListMenuItems();
+  const relatedItems = useMemo(() => {
+    if (!item || !allItems) return [];
+    return allItems
+      .filter((i) => i.chefName === item.chefName && i.id !== item.id)
+      .slice(0, 4);
+  }, [item, allItems]);
 
+  useSEO(item ? {
+    title: isRtl ? item.nameAr : item.name,
+    description: isRtl ? item.descriptionAr : item.description,
+  } : {});
+
+  /* ── Loading skeleton ───────────────────────────────────────────────── */
   if (isLoading) {
     return (
       <PageWrapper>
-        <div className="container mx-auto px-4 py-24">
-          <div className="grid md:grid-cols-2 gap-12">
-            <Skeleton className="h-[400px] md:h-[600px] rounded-3xl" />
-            <div className="space-y-6">
-              <Skeleton className="h-10 w-2/3" />
-              <Skeleton className="h-6 w-1/3" />
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-12 w-48" />
+        <div className="pt-24 pb-16">
+          <div className="container mx-auto px-4 sm:px-6">
+            <Skeleton className="h-5 w-40 mb-10 rounded-full" />
+            <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
+              <Skeleton className="aspect-square md:h-[540px] rounded-3xl" />
+              <div className="space-y-6">
+                <Skeleton className="h-4 w-32 rounded-full" />
+                <Skeleton className="h-12 w-3/4" />
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-14 w-full rounded-full" />
+              </div>
             </div>
           </div>
         </div>
@@ -48,141 +85,275 @@ export default function MenuItemPage() {
     );
   }
 
+  /* ── Not found ──────────────────────────────────────────────────────── */
   if (!item) {
     return (
       <PageWrapper>
         <div className="container mx-auto px-4 py-32 text-center">
-          <h2 className="text-3xl font-bold mb-4">{t("Item not found", "لم يتم العثور على الطبق")}</h2>
+          <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-3xl font-bold mb-2">{t("Dish not found", "لم يتم العثور على الطبق")}</h2>
+          <p className="text-muted-foreground mb-6">{t("It may have been removed from our menu.", "ربما تم إزالته من قائمتنا.")}</p>
           <Link href="/menu">
-            <Button>{t("Back to Menu", "العودة للقائمة")}</Button>
+            <Button className="rounded-full px-8">{t("Back to Menu", "العودة للقائمة")}</Button>
           </Link>
         </div>
       </PageWrapper>
     );
   }
 
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      addItem({
+        id: item.id,
+        name: item.name,
+        nameAr: item.nameAr,
+        price: item.price,
+        imageUrl: item.imageUrl || "/koshari.png",
+        chefName: item.chefName,
+        chefNameAr: item.chefNameAr,
+      });
+    }
+    toast({
+      title: t("Added to cart!", "أُضيف إلى السلة!"),
+      description: `${quantity}× ${isRtl ? item.nameAr : item.name} · ${item.price * quantity} ${t("EGP", "ج.م")}`,
+    });
+    openCart();
+  };
+
   return (
     <PageWrapper>
-      <div className="bg-primary/5 py-8 border-b border-border mt-20">
-        <div className="container mx-auto px-4">
-          <Link href="/menu" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-medium">
-            {isRtl ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
-            {t("Back to Menu", "العودة للقائمة")}
-          </Link>
+
+      {/* ── Breadcrumb bar ─────────────────────────────────────────────── */}
+      <div className="bg-muted/40 border-b border-border mt-16 sm:mt-20">
+        <div className="container mx-auto px-4 sm:px-6 py-3">
+          <nav className={`flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap ${isRtl ? "flex-row-reverse" : ""}`}>
+            <Link href="/" className="hover:text-foreground transition-colors">{t("Home", "الرئيسية")}</Link>
+            <ChevronRight className="w-3 h-3 shrink-0" />
+            <Link href="/menu" className="hover:text-foreground transition-colors">{t("Menu", "القائمة")}</Link>
+            <ChevronRight className="w-3 h-3 shrink-0" />
+            <span className="text-foreground font-medium truncate max-w-[200px]">
+              {isRtl ? item.nameAr : item.name}
+            </span>
+          </nav>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-start">
-          <div className="relative rounded-3xl overflow-hidden shadow-xl aspect-square md:aspect-auto md:h-[600px]">
-            <img 
-              src={item.imageUrl || "/koshari.png"} 
-              alt={isRtl ? item.nameAr : item.name} 
-              className="w-full h-full object-cover"
-            />
-            {item.isFeatured && (
-              <span className={`absolute top-6 ${isRtl ? 'right-6' : 'left-6'} bg-primary text-primary-foreground text-sm font-bold px-4 py-1.5 rounded-full shadow-md`}>
-                {t("Popular", "الأكثر طلباً")}
-              </span>
-            )}
-          </div>
+      {/* ── Main detail grid ───────────────────────────────────────────── */}
+      <div className="container mx-auto px-4 sm:px-6 py-10 md:py-16">
+        <div className="grid md:grid-cols-2 gap-10 lg:gap-20 items-start">
 
-          <div className="space-y-8">
-            <div>
-              <div className="flex items-center gap-3 mb-3 text-sm font-bold text-primary tracking-wider uppercase">
-                <span>{isRtl ? item.categoryNameAr : item.categoryName}</span>
-                {item.dietary?.map((diet) => (
-                  <span key={diet} className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">
-                    {diet}
+          {/* Image — sticky on desktop */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.55, ease }}
+            className="md:sticky md:top-28"
+          >
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl aspect-square bg-muted">
+              <img
+                src={item.imageUrl || "/koshari.png"}
+                alt={isRtl ? item.nameAr : item.name}
+                className="w-full h-full object-cover"
+              />
+              {item.isFeatured && (
+                <span className={`absolute top-5 ${isRtl ? "right-5" : "left-5"} bg-primary text-primary-foreground text-xs font-bold px-3.5 py-1.5 rounded-full shadow-md`}>
+                  {t("Popular", "الأكثر طلباً")}
+                </span>
+              )}
+              {!item.isAvailable && (
+                <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center rounded-3xl">
+                  <span className="bg-destructive text-destructive-foreground font-bold px-6 py-2.5 rounded-full text-sm shadow-lg">
+                    {t("Sold Out", "نفذت الكمية")}
                   </span>
-                ))}
-              </div>
-              <h1 className="text-4xl md:text-5xl font-serif font-bold leading-tight mb-4">
-                {isRtl ? item.nameAr : item.name}
-              </h1>
-              <div className="flex items-center gap-6 text-muted-foreground border-b border-border pb-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">
-                    {(isRtl ? item.chefNameAr : item.chefName).charAt(0)}
-                  </div>
-                  <span>{isRtl ? item.chefNameAr : item.chefName}</span>
                 </div>
-                {item.rating && (
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span>{item.rating}</span>
-                  </div>
-                )}
-                {item.prepTimeMinutes && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{item.prepTimeMinutes} {t("mins", "دقيقة")}</span>
-                  </div>
-                )}
-              </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Info panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.08, ease }}
+            className="space-y-7"
+          >
+            {/* Category + dietary */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-primary tracking-widest uppercase">
+                {isRtl ? item.categoryNameAr : item.categoryName}
+              </span>
+              {item.dietary?.map((diet) => (
+                <DietaryBadge key={diet} diet={diet} isRtl={isRtl} />
+              ))}
             </div>
 
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            {/* Name */}
+            <h1 className="text-4xl sm:text-5xl font-serif font-bold leading-tight">
+              {isRtl ? item.nameAr : item.name}
+            </h1>
+
+            {/* Meta row: chef · rating · prep time */}
+            <div className={`flex flex-wrap items-center gap-4 text-sm pb-6 border-b border-border ${isRtl ? "flex-row-reverse" : ""}`}>
+              <Link href="/chefs" className="flex items-center gap-2 group">
+                <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
+                  <ChefHat className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold leading-tight group-hover:text-primary transition-colors">
+                    {isRtl ? item.chefNameAr : item.chefName}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{t("Home Chef", "طاهية منزلية")}</p>
+                </div>
+              </Link>
+
+              {item.rating && (
+                <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-full">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <span className="font-bold text-sm">{item.rating}</span>
+                </div>
+              )}
+
+              {item.prepTimeMinutes && (
+                <div className="flex items-center gap-1.5 bg-muted text-muted-foreground px-3 py-1.5 rounded-full">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="text-sm font-medium">{item.prepTimeMinutes} {t("min", "دقيقة")}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
               {isRtl ? item.descriptionAr : item.description}
             </p>
 
-            <div className="flex items-center justify-between py-6 border-y border-border">
-              <span className="text-4xl font-bold text-foreground">
-                {item.price} <span className="text-xl text-muted-foreground">{t("EGP", "ج.م")}</span>
-              </span>
+            {/* Price */}
+            <div className="flex items-end gap-2 py-5 border-y border-border">
+              <span className="text-5xl font-bold tabular-nums">{item.price}</span>
+              <span className="text-xl text-muted-foreground pb-1">{t("EGP", "ج.م")}</span>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex items-center justify-between border border-border rounded-full p-2 w-full sm:w-40">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="rounded-full h-10 w-10" 
+            {/* Qty + Add to cart */}
+            <div className={`flex flex-col sm:flex-row gap-3 ${isRtl ? "sm:flex-row-reverse" : ""}`}>
+              {/* Quantity picker */}
+              <div className="flex items-center justify-between border-2 border-border hover:border-primary/40 transition-colors rounded-full px-2 py-1.5 sm:w-36 shrink-0">
+                <Button
+                  variant="ghost" size="icon"
+                  className="rounded-full h-9 w-9 hover:bg-primary/10"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   disabled={quantity <= 1}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
-                <span className="font-bold text-lg w-8 text-center">{quantity}</span>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="rounded-full h-10 w-10" 
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={quantity}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="font-bold text-lg w-8 text-center tabular-nums"
+                  >
+                    {quantity}
+                  </motion.span>
+                </AnimatePresence>
+                <Button
+                  variant="ghost" size="icon"
+                  className="rounded-full h-9 w-9 hover:bg-primary/10"
                   onClick={() => setQuantity(quantity + 1)}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              <Button 
-                size="lg" 
-                className="flex-1 rounded-full h-14 text-lg font-bold shadow-lg"
+
+              {/* Add to cart */}
+              <Button
+                size="lg"
+                className="flex-1 rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-shadow"
                 disabled={!item.isAvailable}
-                onClick={() => {
-                  for (let i = 0; i < quantity; i++) {
-                    addItem({
-                      id: item.id,
-                      name: item.name,
-                      nameAr: item.nameAr,
-                      price: item.price,
-                      imageUrl: item.imageUrl || "/koshari.png",
-                      chefName: item.chefName,
-                      chefNameAr: item.chefNameAr,
-                    });
-                  }
-                  toast({
-                    title: t("Added to cart!", "أُضيف إلى السلة!"),
-                    description: `${quantity}× ${isRtl ? item.nameAr : item.name} · ${item.price * quantity} ${t("EGP", "ج.م")}`,
-                  });
-                  openCart();
-                }}
+                onClick={handleAddToCart}
               >
-                <ShoppingBag className={`h-5 w-5 ${isRtl ? "ml-2" : "mr-2"}`} />
-                {item.isAvailable ? t("Add to Cart", "أضف للسلة") : t("Sold Out", "نفذت الكمية")}
+                <ShoppingBag className={`h-5 w-5 ${isRtl ? "ml-2.5" : "mr-2.5"}`} />
+                {item.isAvailable
+                  ? `${t("Add to Cart", "أضف للسلة")}${quantity > 1 ? ` (${quantity})` : ""}`
+                  : t("Sold Out", "نفذت الكمية")}
               </Button>
             </div>
-          </div>
+
+            {/* Total callout when qty > 1 */}
+            <AnimatePresence>
+              {quantity > 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-sm text-muted-foreground bg-muted/60 rounded-xl px-4 py-2.5 border border-border"
+                >
+                  {t("Total", "الإجمالي")}: <span className="font-bold text-foreground">{item.price * quantity} {t("EGP", "ج.م")}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       </div>
+
+      {/* ── More from this chef ────────────────────────────────────────── */}
+      {relatedItems.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3, ease }}
+          className="border-t border-border bg-muted/30"
+        >
+          <div className="container mx-auto px-4 sm:px-6 py-12">
+            <div className={`flex items-center justify-between mb-7 ${isRtl ? "flex-row-reverse" : ""}`}>
+              <div>
+                <p className="text-xs font-bold text-primary tracking-widest uppercase mb-1">
+                  {isRtl ? item.chefNameAr : item.chefName}
+                </p>
+                <h2 className="text-2xl font-serif font-bold">
+                  {t("More from this Chef", "المزيد من هذا الطاهي")}
+                </h2>
+              </div>
+              <Link href="/menu" className={`text-sm font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 ${isRtl ? "flex-row-reverse" : ""}`}>
+                {t("View all", "عرض الكل")}
+                {isRtl ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {relatedItems.map((rel, i) => (
+                <motion.div
+                  key={rel.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 * i, ease }}
+                >
+                  <Link href={`/menu/${rel.id}`}>
+                    <div className="group bg-card border border-card-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer">
+                      <div className="relative aspect-square overflow-hidden bg-muted">
+                        <img
+                          src={rel.imageUrl || "/koshari.png"}
+                          alt={isRtl ? rel.nameAr : rel.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="p-3">
+                        <p className="font-bold text-sm leading-tight mb-1 line-clamp-1">
+                          {isRtl ? rel.nameAr : rel.name}
+                        </p>
+                        <p className="text-primary font-bold text-sm">{rel.price} {t("EGP", "ج.م")}</p>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
     </PageWrapper>
   );
 }
