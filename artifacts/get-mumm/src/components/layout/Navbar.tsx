@@ -1,17 +1,19 @@
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Moon, Sun, Globe, User, Phone, X, LogIn } from "lucide-react";
+import { Menu, Moon, Sun, Globe, User, Phone, X, LogIn, ShoppingCart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AuthModal } from "@/components/auth/AuthModal";
 
 export function Navbar() {
   const { t, language, setLanguage, isRtl } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const { totalItems, openCart } = useCart();
   const [location] = useLocation();
-  const [isScrolled, setIsScrolled]       = useState(false);
+  const [isScrolled, setIsScrolled]        = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authOpen, setAuthOpen]             = useState(false);
   const [authTab, setAuthTab]               = useState<"login" | "register">("login");
@@ -22,22 +24,20 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on navigation
   useEffect(() => { setMobileMenuOpen(false); }, [location]);
 
-  // Prevent body scroll when mobile menu or auth modal is open
   useEffect(() => {
     document.body.style.overflow = (mobileMenuOpen || authOpen) ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [mobileMenuOpen, authOpen]);
 
   const navLinks = [
-    { href: "/",           label: t("Home",       "الرئيسية") },
-    { href: "/menu",       label: t("Menu",        "المنيو")   },
-    { href: "/for-offices",label: t("For Offices", "للشركات")  },
-    { href: "/about",      label: t("About Us",    "من نحن")   },
-    { href: "/blog",       label: t("Blog",        "المدونة")  },
-    { href: "/contact",    label: t("Contact",     "تواصل")    },
+    { href: "/",            label: t("Home",       "الرئيسية") },
+    { href: "/menu",        label: t("Menu",        "المنيو")   },
+    { href: "/for-offices", label: t("For Offices", "للشركات")  },
+    { href: "/about",       label: t("About Us",    "من نحن")   },
+    { href: "/blog",        label: t("Blog",        "المدونة")  },
+    { href: "/contact",     label: t("Contact",     "تواصل")    },
   ];
 
   const toggleLanguage = () => setLanguage(language === "en" ? "ar" : "en");
@@ -94,7 +94,7 @@ export function Navbar() {
           </nav>
 
           {/* Actions row */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             {/* Language toggle */}
             <button
               onClick={toggleLanguage}
@@ -114,14 +114,36 @@ export function Navbar() {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* Auth icon — visible on all sizes */}
+            {/* Auth icon */}
             <button
               onClick={() => openAuth("login")}
               className="p-2 rounded-full hover:bg-muted transition-colors"
               aria-label="Sign in"
-              title={t("Sign in", "تسجيل الدخول")}
             >
               <User className="h-4 w-4" />
+            </button>
+
+            {/* Cart icon with animated badge */}
+            <button
+              onClick={openCart}
+              className="relative p-2 rounded-full hover:bg-muted transition-colors"
+              aria-label="Open cart"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <AnimatePresence>
+                {totalItems > 0 && (
+                  <motion.span
+                    key="cart-badge"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                    className={`absolute -top-0.5 ${isRtl ? "-left-0.5" : "-right-0.5"} min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow`}
+                  >
+                    {totalItems > 99 ? "99+" : totalItems}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
 
             {/* Phone — md+ only */}
@@ -143,7 +165,7 @@ export function Navbar() {
               </Button>
             </Link>
 
-            {/* Hamburger — always shows ≡, never X (X lives inside the overlay) */}
+            {/* Hamburger — always shows ≡ */}
             <button
               className="lg:hidden p-2 rounded-full hover:bg-muted transition-colors"
               onClick={() => setMobileMenuOpen(true)}
@@ -155,7 +177,7 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* ── Mobile full-screen overlay — z-[55] sits above header (z-50) ──── */}
+      {/* ── Mobile overlay — z-[55] covers header (z-50) ────────────────── */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -167,7 +189,7 @@ export function Navbar() {
             className="fixed inset-0 z-[55] bg-background lg:hidden flex flex-col overflow-y-auto"
             dir={isRtl ? "rtl" : "ltr"}
           >
-            {/* Overlay header — single close button, no duplicate */}
+            {/* Overlay header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
               <div>
                 <span className="text-xl font-serif font-bold text-primary block leading-none">Get Mumm</span>
@@ -175,13 +197,35 @@ export function Navbar() {
                   {t("Homemade Meals Delivered with Love", "وجبات منزلية بنكهة الحب")}
                 </span>
               </div>
-              <button
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-                aria-label="Close menu"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Cart in overlay header too */}
+                <button
+                  onClick={() => { setMobileMenuOpen(false); openCart(); }}
+                  className="relative p-2 rounded-full hover:bg-muted transition-colors"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <AnimatePresence>
+                    {totalItems > 0 && (
+                      <motion.span
+                        key="mobile-cart-badge"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className={`absolute -top-0.5 ${isRtl ? "-left-0.5" : "-right-0.5"} min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1`}
+                      >
+                        {totalItems}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </button>
+                <button
+                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Nav links */}
@@ -250,7 +294,7 @@ export function Navbar() {
                 </button>
               </div>
 
-              {/* Order Now CTA */}
+              {/* Order Now */}
               <Link href="/menu" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full rounded-xl h-12 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/85">
                   {t("Order Now", "اطلب الآن")}

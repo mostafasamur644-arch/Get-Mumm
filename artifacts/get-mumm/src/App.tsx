@@ -5,10 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { pageVariants } from "@/lib/motion";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 
 import Home from "@/pages/home";
 import MenuPage from "@/pages/menu";
@@ -24,6 +26,9 @@ import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
 import DeliveryAreasPage from "@/pages/delivery-areas";
 import PartnerPage from "@/pages/partner";
+import CheckoutPage from "@/pages/checkout";
+import OrderConfirmationPage from "@/pages/order-confirmation";
+import OrderTrackingPage from "@/pages/order-tracking";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -57,6 +62,9 @@ function AnimatedRoutes() {
           <Route path="/terms" component={TermsPage} />
           <Route path="/delivery-areas" component={DeliveryAreasPage} />
           <Route path="/partner" component={PartnerPage} />
+          <Route path="/checkout" component={CheckoutPage} />
+          <Route path="/order-confirmation" component={OrderConfirmationPage} />
+          <Route path="/order/:id" component={OrderTrackingPage} />
           <Route component={NotFound} />
         </Switch>
       </motion.div>
@@ -72,6 +80,8 @@ function Router() {
         <AnimatedRoutes />
       </main>
       <Footer />
+      {/* Cart drawer lives outside page flow so it persists across route changes */}
+      <CartDrawer />
     </div>
   );
 }
@@ -81,12 +91,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <LanguageProvider>
-          <TooltipProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-          </TooltipProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </TooltipProvider>
+          </CartProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>

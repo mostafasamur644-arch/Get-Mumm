@@ -1,7 +1,8 @@
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useCart } from "@/contexts/CartContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useListMenuItems, useListCategories } from "@workspace/api-client-react";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -40,15 +41,14 @@ const SORT_OPTIONS = [
   { value: "prep-asc", labelEn: "Fastest First", labelAr: "الأسرع تحضيراً" },
 ];
 
-type CartMap = Map<number, number>;
-
 export default function MenuPage() {
   const { t, isRtl } = useLanguage();
   const { toast } = useToast();
+  const { addItem, updateQty, items: cartItems, totalItems, openCart } = useCart();
 
   // ── Filter state ─────────────────────────────────────────────────────────
-  const [search, setSearch]             = useState("");
-  const [debSearch, setDebSearch]       = useState("");
+  const [search, setSearch]                 = useState("");
+  const [debSearch, setDebSearch]           = useState("");
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [activeDietary, setActiveDietary]   = useState<string[]>([]);
   const [priceRangeIdx, setPriceRangeIdx]   = useState(0);
@@ -56,32 +56,6 @@ export default function MenuPage() {
   const [currentPage, setCurrentPage]       = useState(1);
   const [filtersOpen, setFiltersOpen]       = useState(false);
   const [sortOpen, setSortOpen]             = useState(false);
-
-  // ── Cart state ───────────────────────────────────────────────────────────
-  const [cart, setCart] = useState<CartMap>(new Map());
-  const cartTotal = useMemo(() => [...cart.values()].reduce((a, b) => a + b, 0), [cart]);
-
-  const addToCart = useCallback((itemId: number, name: string, price: number) => {
-    setCart((prev) => {
-      const next = new Map(prev);
-      next.set(itemId, (next.get(itemId) ?? 0) + 1);
-      return next;
-    });
-    toast({
-      title: t("Added to cart!", "أُضيف إلى السلة!"),
-      description: `${name} · ${price} ${t("EGP", "ج.م")}`,
-    });
-  }, [toast, t]);
-
-  const removeFromCart = useCallback((itemId: number) => {
-    setCart((prev) => {
-      const next = new Map(prev);
-      const qty = next.get(itemId) ?? 0;
-      if (qty <= 1) next.delete(itemId);
-      else next.set(itemId, qty - 1);
-      return next;
-    });
-  }, []);
 
   // ── Debounce search ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -486,19 +460,20 @@ export default function MenuPage() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Cart indicator */}
+          {/* Cart shortcut */}
           <AnimatePresence>
-            {cartTotal > 0 && (
-              <motion.div
+            {totalItems > 0 && (
+              <motion.button
                 initial={{ opacity: 0, scale: 0.8, x: 10 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.8, x: 10 }}
                 transition={{ type: "spring", stiffness: 340, damping: 26 }}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-bold shadow-md"
+                onClick={openCart}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-bold shadow-md hover:bg-primary/85 transition-colors"
               >
                 <ShoppingCart className="w-4 h-4" />
-                {cartTotal} {t("in cart", "في السلة")}
-              </motion.div>
+                {totalItems} {t("in cart", "في السلة")}
+              </motion.button>
             )}
           </AnimatePresence>
         </div>
@@ -545,7 +520,7 @@ export default function MenuPage() {
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
               >
                 {paginatedItems.map((item) => {
-                  const cartQty = cart.get(item.id) ?? 0;
+                  const cartQty = cartItems.find((e) => e.id === item.id)?.qty ?? 0;
                   return (
                     <motion.div
                       key={item.id}
@@ -573,7 +548,15 @@ export default function MenuPage() {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              addToCart(item.id, isRtl ? item.nameAr : item.name, item.price);
+                              addItem({
+                                id: item.id, name: item.name, nameAr: item.nameAr,
+                                price: item.price, imageUrl: item.imageUrl,
+                                chefName: item.chefName, chefNameAr: item.chefNameAr,
+                              });
+                              toast({
+                                title: t("Added to cart!", "أُضيف إلى السلة!"),
+                                description: `${isRtl ? item.nameAr : item.name} · ${item.price} ${t("EGP", "ج.م")}`,
+                              });
                             }}
                             className="flex items-center gap-2 bg-white text-foreground font-bold text-sm px-5 py-2.5 rounded-full shadow-lg hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95"
                           >
@@ -595,14 +578,21 @@ export default function MenuPage() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFromCart(item.id); }}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQty(item.id, -1); }}
                                 className="hover:opacity-70 transition-opacity"
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
                               <span className="text-xs font-bold min-w-[14px] text-center">{cartQty}</span>
                               <button
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(item.id, isRtl ? item.nameAr : item.name, item.price); }}
+                                onClick={(e) => {
+                                  e.preventDefault(); e.stopPropagation();
+                                  addItem({
+                                    id: item.id, name: item.name, nameAr: item.nameAr,
+                                    price: item.price, imageUrl: item.imageUrl,
+                                    chefName: item.chefName, chefNameAr: item.chefNameAr,
+                                  });
+                                }}
                                 className="hover:opacity-70 transition-opacity"
                               >
                                 <Plus className="w-3 h-3" />
