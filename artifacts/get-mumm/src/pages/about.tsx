@@ -1,11 +1,12 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useGetSiteSummary } from "@workspace/api-client-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Users, Utensils, ShieldCheck, Award, TrendingUp } from "lucide-react";
+import { motion } from "framer-motion";
+import { Heart, Users, Utensils, ShieldCheck, Award } from "lucide-react";
 import { sectionReveal, sectionStagger, sectionItem, staggerGrid, cardVariant } from "@/lib/motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { WaveDivider } from "@/components/ui/WaveDivider";
 
 export default function AboutPage() {
   const { t } = useLanguage();
@@ -72,7 +73,7 @@ export default function AboutPage() {
   return (
     <PageWrapper>
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="py-28 sm:py-36 bg-card border-b border-border overflow-hidden">
+      <section className="py-28 sm:py-36 bg-background overflow-hidden">
         <div className="container mx-auto px-4 max-w-5xl text-center">
           <motion.div {...sectionReveal}>
             <span className="inline-block bg-primary/10 text-primary text-sm font-bold px-4 py-1.5 rounded-full mb-6">
@@ -92,6 +93,8 @@ export default function AboutPage() {
           </motion.div>
         </div>
       </section>
+
+      <WaveDivider bg="var(--color-background)" fill="var(--color-primary)" />
 
       {/* ── Name Origin ───────────────────────────────────────────── */}
       <section className="py-20 bg-primary text-primary-foreground overflow-hidden">
@@ -133,6 +136,8 @@ export default function AboutPage() {
           </motion.div>
         </div>
       </section>
+
+      <WaveDivider bg="var(--color-primary)" fill="var(--color-background)" flip />
 
       {/* ── Story ─────────────────────────────────────────────────── */}
       <section className="py-24 bg-background">
@@ -181,7 +186,7 @@ export default function AboutPage() {
                 )}
               </p>
               <Link href="/partner">
-                <Button variant="outline" className="rounded-full px-6 font-semibold">
+                <Button variant="outline" className="rounded-full px-6 font-semibold border-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
                   {t("Become a Chef Partner →", "انضم كطاهية شريكة →")}
                 </Button>
               </Link>
@@ -190,38 +195,48 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── Stats ─────────────────────────────────────────────────── */}
+      {/* ── Stats (conditional) ───────────────────────────────────── */}
       {summary && (
-        <section className="py-20 bg-primary text-primary-foreground">
-          <div className="container mx-auto px-4">
-            <motion.div
-              variants={sectionStagger}
-              initial="initial"
-              whileInView="whileInView"
-              viewport={{ once: true }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
-            >
-              {[
-                { value: `${summary.mealsDelivered.toLocaleString()}+`, label: t("Meals Delivered", "وجبة تم توصيلها") },
-                { value: `${summary.chefsEmpowered}+`, label: t("Active Kitchens", "مطبخ نشط") },
-                { value: "80%", label: t("Repeat Customers", "عملاء متكررون") },
-                { value: summary.avgRating, label: t("Average Rating", "متوسط التقييم") },
-              ].map((stat, i) => (
-                <motion.div key={i} variants={sectionItem} className="flex flex-col">
-                  <span className="text-4xl md:text-5xl font-bold mb-2">{stat.value}</span>
-                  <span className="opacity-85 font-medium text-sm">{stat.label}</span>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
+        <>
+          <WaveDivider bg="var(--color-background)" fill="var(--color-primary)" />
+          <section className="py-20 bg-primary text-primary-foreground">
+            <div className="container mx-auto px-4">
+              <motion.div
+                variants={sectionStagger}
+                initial="initial"
+                whileInView="whileInView"
+                viewport={{ once: true }}
+                className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
+              >
+                {[
+                  { value: `${summary.mealsDelivered.toLocaleString()}+`, label: t("Meals Delivered", "وجبة تم توصيلها") },
+                  { value: `${summary.chefsEmpowered}+`, label: t("Active Kitchens", "مطبخ نشط") },
+                  { value: "80%", label: t("Repeat Customers", "عملاء متكررون") },
+                  { value: summary.avgRating, label: t("Average Rating", "متوسط التقييم") },
+                ].map((stat, i) => (
+                  <motion.div key={i} variants={sectionItem} className="flex flex-col">
+                    <span className="text-4xl md:text-5xl font-bold mb-2">{stat.value}</span>
+                    <span className="opacity-85 font-medium text-sm">{stat.label}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          </section>
+          <WaveDivider bg="var(--color-primary)" fill="var(--color-accent)" flip />
+        </>
       )}
 
+      {/* wave when no stats */}
+      {!summary && <WaveDivider bg="var(--color-background)" fill="var(--color-accent)" />}
+
       {/* ── Values ───────────────────────────────────────────────── */}
-      <section className="py-24 bg-card border-y border-border">
+      <section className="py-24 bg-accent">
         <div className="container mx-auto px-4">
           <motion.div {...sectionReveal} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold">{t("Our Values", "قيمنا")}</h2>
+            <span className="inline-block bg-primary/15 text-primary font-semibold text-sm px-4 py-1.5 rounded-full mb-4">
+              {t("What We Believe", "ما نؤمن به")}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-accent-foreground">{t("Our Values", "قيمنا")}</h2>
           </motion.div>
           <motion.div
             variants={staggerGrid}
@@ -231,7 +246,13 @@ export default function AboutPage() {
             className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
           >
             {values.map((v, i) => (
-              <motion.div key={i} variants={cardVariant} className="flex flex-col items-center text-center p-6 bg-background rounded-2xl border border-border hover:shadow-md transition-shadow">
+              <motion.div
+                key={i}
+                variants={cardVariant}
+                whileHover={{ y: -6 }}
+                transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                className="flex flex-col items-center text-center p-6 bg-card rounded-2xl border border-card-border hover:shadow-xl hover:border-primary/20 transition-all duration-300"
+              >
                 <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mb-5">
                   {v.icon}
                 </div>
@@ -243,10 +264,15 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <WaveDivider bg="var(--color-accent)" fill="var(--color-background)" flip />
+
       {/* ── Backers & Recognition ─────────────────────────────────── */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 max-w-5xl">
           <motion.div {...sectionReveal} className="text-center mb-12">
+            <span className="inline-block bg-primary/10 text-primary font-semibold text-sm px-4 py-1.5 rounded-full mb-4">
+              {t("Trusted By", "يثق بنا")}
+            </span>
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-3">
               {t("Backed & Recognised", "بدعم من ومعترف بها")}
             </h2>
@@ -268,7 +294,9 @@ export default function AboutPage() {
               <motion.div
                 key={i}
                 variants={cardVariant}
-                className="flex flex-col items-center text-center p-6 bg-card border border-border rounded-2xl"
+                whileHover={{ y: -4, scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className="flex flex-col items-center text-center p-6 bg-card border border-card-border rounded-2xl hover:shadow-lg hover:border-primary/20 transition-all"
               >
                 <div className="text-4xl mb-3">{r.logo}</div>
                 <p className="font-bold text-sm">{r.name}</p>
@@ -277,7 +305,7 @@ export default function AboutPage() {
             ))}
           </motion.div>
 
-          <motion.div {...sectionReveal} className="mt-16 bg-primary/5 border border-primary/20 rounded-3xl p-8 md:p-12 text-center">
+          <motion.div {...sectionReveal} className="mt-16 bg-primary/8 border border-primary/20 rounded-3xl p-8 md:p-12 text-center">
             <Award className="w-10 h-10 text-primary mx-auto mb-4" />
             <h3 className="text-2xl font-serif font-bold mb-3">
               {t("UN Sustainable Development Goals", "أهداف التنمية المستدامة للأمم المتحدة")}

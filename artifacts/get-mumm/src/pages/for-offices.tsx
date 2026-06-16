@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageWrapper, fadeInUp, staggerContainer, staggerItem } from "@/components/layout/PageWrapper";
+import { WaveDivider } from "@/components/ui/WaveDivider";
 import { useSubmitOfficeInquiry } from "@workspace/api-client-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -133,8 +134,10 @@ export default function ForOfficesPage() {
         </div>
       </section>
 
+      <WaveDivider bg="var(--color-background)" fill="var(--color-accent)" />
+
       {/* Benefits */}
-      <section className="py-24 bg-card">
+      <section className="py-24 bg-accent">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">
@@ -164,8 +167,10 @@ export default function ForOfficesPage() {
         </div>
       </section>
 
+      <WaveDivider bg="var(--color-accent)" fill="var(--color-background)" flip />
+
       {/* Inquiry Form */}
-      <section id="inquiry-form" className="py-24 bg-background border-t border-border">
+      <section id="inquiry-form" className="py-24 bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="bg-card border rounded-[2.5rem] p-8 md:p-12 shadow-xl">
             <div className="text-center mb-10">

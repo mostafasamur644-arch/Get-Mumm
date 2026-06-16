@@ -2,6 +2,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useGetFeaturedItems, useListCategories, useListTestimonials } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import { WaveDivider } from "@/components/ui/WaveDivider";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { Star, ArrowRight, ArrowLeft } from "lucide-react";
@@ -38,8 +39,8 @@ export default function Home() {
 
   return (
     <PageWrapper>
-      {/* ─── Hero Section ──────────────────────────────────────────────── */}
-      <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-background">
+      {/* ─── Hero ──────────────────────────────────────────────────────── */}
+      <section className="relative min-h-[94vh] flex items-center justify-center overflow-hidden bg-background">
         {/* Background image */}
         <div className="absolute inset-0 z-0">
           <motion.img
@@ -47,13 +48,13 @@ export default function Home() {
             alt="Delicious Egyptian Food"
             className="w-full h-full object-cover"
             initial={{ opacity: 0, scale: 1.06 }}
-            animate={{ opacity: 0.18, scale: 1 }}
+            animate={{ opacity: 0.22, scale: 1 }}
             transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/75 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
         </div>
 
-        <div className="container relative z-10 mx-auto px-4 text-center mt-20">
+        <div className="container relative z-10 mx-auto px-4 text-center mt-16">
           {/* Word-by-word headline reveal */}
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-foreground mb-6 leading-tight">
             {heroWords.map((word, i) => (
@@ -71,7 +72,6 @@ export default function Home() {
             ))}
           </h1>
 
-          {/* Subtext fade up */}
           <motion.p
             {...fadeUp}
             animate={fadeUp.animate}
@@ -84,7 +84,6 @@ export default function Home() {
             )}
           </motion.p>
 
-          {/* CTA buttons stagger */}
           <motion.div
             {...fadeUp}
             animate={fadeUp.animate}
@@ -109,31 +108,36 @@ export default function Home() {
               </Button>
             </Link>
           </motion.div>
+        </div>
 
-          {/* Scroll indicator */}
+        {/* Scroll indicator — direct child of section so bottom-8 is correct */}
+        <motion.div
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.4, duration: 0.6 }}
+        >
           <motion.div
-            className="absolute bottom-8 left-1/2 -translate-x-1/2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.4, duration: 0.6 }}
+            className="w-6 h-10 rounded-full border-2 border-foreground/25 flex items-start justify-center pt-1.5 mx-auto"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
           >
             <motion.div
-              className="w-6 h-10 rounded-full border-2 border-foreground/20 flex items-start justify-center pt-1.5 mx-auto"
-              animate={{ opacity: [0.4, 1, 0.4] }}
+              className="w-1 h-2.5 bg-primary rounded-full"
+              animate={{ y: [0, 12, 0] }}
               transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-            >
-              <motion.div
-                className="w-1 h-2.5 bg-primary rounded-full"
-                animate={{ y: [0, 12, 0] }}
-                transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-              />
-            </motion.div>
+            />
           </motion.div>
-        </div>
+          <p className="text-[10px] font-medium text-muted-foreground mt-2 uppercase tracking-widest">
+            {t("Scroll", "مرر")}
+          </p>
+        </motion.div>
       </section>
 
+      <WaveDivider bg="var(--color-background)" fill="var(--color-accent)" />
+
       {/* ─── Stats Strip ───────────────────────────────────────────────── */}
-      <section className="bg-primary/6 border-y border-border py-12 overflow-hidden">
+      <section className="bg-accent py-14 overflow-hidden">
         <div className="container mx-auto px-4">
           <motion.div
             variants={sectionStagger}
@@ -153,17 +157,22 @@ export default function Home() {
                 >
                   {stat.value}
                 </motion.span>
-                <span className="text-muted-foreground font-medium text-sm">{stat.label}</span>
+                <span className="text-accent-foreground font-semibold text-sm">{stat.label}</span>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
+      <WaveDivider bg="var(--color-accent)" fill="var(--color-background)" flip />
+
       {/* ─── Featured Dishes ───────────────────────────────────────────── */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4">
           <motion.div {...sectionReveal} className="text-center mb-14">
+            <span className="inline-block bg-primary/10 text-primary font-semibold text-sm px-4 py-1.5 rounded-full mb-4">
+              {t("Chef's Picks", "اختيارات الطهاة")}
+            </span>
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
               {t("Featured Dishes", "الأطباق المميزة")}
             </h2>
@@ -207,14 +216,15 @@ export default function Home() {
                         whileHover={{ y: -8, scale: 1.015 }}
                         whileTap={{ scale: 0.98 }}
                         transition={{ type: "spring", stiffness: 320, damping: 26 }}
-                        className="group bg-card border border-card-border rounded-[2rem] overflow-hidden hover:shadow-2xl transition-shadow duration-500 h-full flex flex-col cursor-pointer"
+                        className="group bg-card border border-card-border rounded-[2rem] overflow-hidden hover:shadow-2xl hover:border-primary/20 transition-all duration-500 h-full flex flex-col cursor-pointer"
                       >
                         <div className="relative h-64 overflow-hidden bg-muted">
                           <img
                             src={item.imageUrl || "/koshari.png"}
                             alt={isRtl ? item.nameAr : item.name}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                           />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           <motion.div
                             className={`absolute top-4 ${isRtl ? "right-4" : "left-4"} bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold`}
                             initial={{ opacity: 0, x: isRtl ? 10 : -10 }}
@@ -259,7 +269,7 @@ export default function Home() {
 
           <motion.div {...sectionReveal} className="text-center mt-12">
             <Link href="/menu">
-              <Button variant="outline" size="lg" className="rounded-full px-8 font-semibold">
+              <Button variant="outline" size="lg" className="rounded-full px-8 font-semibold border-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
                 {t("View Full Menu", "عرض القائمة كاملة")}
                 {isRtl
                   ? <ArrowLeft className="mr-2 h-4 w-4" />
@@ -270,11 +280,16 @@ export default function Home() {
         </div>
       </section>
 
+      <WaveDivider bg="var(--color-background)" fill="var(--color-accent)" />
+
       {/* ─── Categories Grid ───────────────────────────────────────────── */}
-      <section className="py-24 bg-card border-y border-border">
+      <section className="py-24 bg-accent">
         <div className="container mx-auto px-4">
           <motion.div {...sectionReveal} className="text-center mb-14">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-2">
+            <span className="inline-block bg-primary/15 text-primary font-semibold text-sm px-4 py-1.5 rounded-full mb-4">
+              {t("All Categories", "جميع التصنيفات")}
+            </span>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-2 text-accent-foreground">
               {t("Browse by Category", "تصفح بالتصنيفات")}
             </h2>
           </motion.div>
@@ -307,14 +322,14 @@ export default function Home() {
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.97 }}
                         transition={{ type: "spring", stiffness: 340, damping: 24 }}
-                        className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer"
+                        className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer shadow-lg"
                       >
                         <img
                           src={cat.imageUrl || "/mahshi.png"}
                           alt={isRtl ? cat.nameAr : cat.name}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent group-hover:from-black/80 transition-colors duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent group-hover:from-black/85 transition-colors duration-300" />
                         <div className="absolute inset-0 flex flex-col items-center justify-end text-white p-5 text-center">
                           <h3 className="text-xl md:text-2xl font-bold font-serif mb-1 drop-shadow-sm">
                             {isRtl ? cat.nameAr : cat.name}
@@ -331,10 +346,15 @@ export default function Home() {
         </div>
       </section>
 
+      <WaveDivider bg="var(--color-accent)" fill="var(--color-background)" flip />
+
       {/* ─── Testimonials ─────────────────────────────────────────────── */}
       <section className="py-24 bg-background overflow-hidden">
         <div className="container mx-auto px-4">
           <motion.div {...sectionReveal} className="text-center mb-14">
+            <span className="inline-block bg-primary/10 text-primary font-semibold text-sm px-4 py-1.5 rounded-full mb-4">
+              {t("Real Reviews", "آراء حقيقية")}
+            </span>
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-2">
               {t("What They Say", "ماذا يقولون عنا")}
             </h2>
@@ -365,7 +385,7 @@ export default function Home() {
                     variants={cardVariant}
                     whileHover={{ y: -6 }}
                     transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                    className="bg-primary/5 rounded-[2rem] p-8 border border-border hover:border-primary/30 transition-colors"
+                    className="bg-card rounded-[2rem] p-8 border border-card-border hover:border-primary/30 hover:shadow-xl transition-all duration-300"
                   >
                     <div className="flex gap-1 mb-5">
                       {Array.from({ length: testimonial.rating }).map((_, i) => (
@@ -379,7 +399,7 @@ export default function Home() {
                       <img
                         src={testimonial.avatarUrl || "/chef2.png"}
                         alt={isRtl ? testimonial.nameAr : testimonial.name}
-                        className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20"
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/30"
                       />
                       <div>
                         <h4 className="font-bold text-sm">{isRtl ? testimonial.nameAr : testimonial.name}</h4>
@@ -398,6 +418,8 @@ export default function Home() {
         </div>
       </section>
 
+      <WaveDivider bg="var(--color-background)" fill="var(--color-secondary)" />
+
       {/* ─── For Offices Teaser ───────────────────────────────────────── */}
       <motion.section
         {...sectionReveal}
@@ -411,6 +433,9 @@ export default function Home() {
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             >
+              <span className="inline-block bg-white/15 text-white font-semibold text-sm px-4 py-1.5 rounded-full mb-6">
+                {t("For Companies", "للشركات")}
+              </span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-6">
                 {t("Elevate Your Office Lunch", "ارتقِ بغداء شركتك")}
               </h2>
@@ -421,7 +446,7 @@ export default function Home() {
                 )}
               </p>
               <Link href="/for-offices">
-                <Button size="lg" variant="secondary" className="rounded-full px-8 bg-white text-secondary hover:bg-white/90 font-bold">
+                <Button size="lg" className="rounded-full px-8 bg-white text-secondary hover:bg-white/90 font-bold shadow-lg">
                   {t("Learn More", "اعرف المزيد")}
                 </Button>
               </Link>
@@ -443,10 +468,15 @@ export default function Home() {
         </div>
       </motion.section>
 
+      <WaveDivider bg="var(--color-secondary)" fill="var(--color-background)" flip />
+
       {/* ─── App Download CTA ─────────────────────────────────────────── */}
-      <section className="py-32 bg-background border-t border-border">
+      <section className="py-28 bg-background">
         <div className="container mx-auto px-4 text-center">
           <motion.div {...sectionReveal}>
+            <span className="inline-block bg-primary/10 text-primary font-semibold text-sm px-4 py-1.5 rounded-full mb-6">
+              {t("Mobile App", "تطبيق الجوال")}
+            </span>
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
               {t("Get the App", "حمل التطبيق")}
             </h2>

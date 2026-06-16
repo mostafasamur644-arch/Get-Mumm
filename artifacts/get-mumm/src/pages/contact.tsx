@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { WaveDivider } from "@/components/ui/WaveDivider";
 import { useSubmitContact } from "@workspace/api-client-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -91,7 +92,7 @@ export default function ContactPage() {
 
   return (
     <PageWrapper>
-      <div className="bg-primary/8 pt-28 sm:pt-32 pb-12 border-b border-border">
+      <div className="bg-accent pt-28 sm:pt-32 pb-12">
         <div className="container mx-auto px-4 text-center max-w-2xl">
           <motion.div {...sectionReveal}>
             <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">
@@ -107,6 +108,7 @@ export default function ContactPage() {
         </div>
       </div>
 
+      <WaveDivider bg="var(--color-accent)" fill="var(--color-background)" flip />
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-12 lg:gap-20">
 
