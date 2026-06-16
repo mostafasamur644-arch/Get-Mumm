@@ -116,7 +116,7 @@ export function FoodCarousel() {
   }, [active]);
   useEffect(() => {
     document.documentElement.style.setProperty("--carousel-bg", DISHES[0].bg);
-    return () => document.documentElement.style.removeProperty("--carousel-bg");
+    return () => { document.documentElement.style.removeProperty("--carousel-bg"); };
   }, []);
 
   const go = useCallback((dir: "next" | "prev") => {

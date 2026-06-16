@@ -1,22 +1,7 @@
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ease, wordReveal } from "@/lib/motion";
-
-const staggerContainer = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.3,
-    },
-  },
-};
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: ease.out } },
-};
+import { ease, wordReveal, animateStagger, animateFadeUp } from "@/lib/motion";
 
 const floatAnimate = {
   y: [0, -14, 0],
@@ -109,13 +94,13 @@ export default function NotFound() {
 
       {/* Body copy + CTA */}
       <motion.div
-        variants={staggerContainer}
+        variants={animateStagger}
         initial="hidden"
         animate="show"
         className="mt-8 flex flex-col items-center gap-6 text-center max-w-md"
       >
         <motion.p
-          variants={fadeUp}
+          variants={animateFadeUp}
           className="text-muted-foreground text-base sm:text-lg leading-relaxed"
         >
           {t(
@@ -124,7 +109,7 @@ export default function NotFound() {
           )}
         </motion.p>
 
-        <motion.div variants={fadeUp} className="flex gap-3 flex-wrap justify-center">
+        <motion.div variants={animateFadeUp} className="flex gap-3 flex-wrap justify-center">
           <motion.button
             onClick={() => navigate("/")}
             className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg hover:shadow-primary/30 transition-shadow"

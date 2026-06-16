@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
-import { PageWrapper, fadeInUp, staggerContainer, staggerItem } from "@/components/layout/PageWrapper";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { sectionReveal, sectionStagger, sectionItem } from "@/lib/motion";
 import { WaveDivider } from "@/components/ui/WaveDivider";
 import { useSubmitOfficeInquiry } from "@workspace/api-client-react";
 import { useForm } from "react-hook-form";
@@ -94,7 +95,7 @@ export default function ForOfficesPage() {
       {/* Hero */}
       <section className="relative pt-32 pb-20 overflow-hidden bg-background">
         <div className="container mx-auto px-4 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-          <motion.div {...fadeInUp}>
+          <motion.div {...sectionReveal}>
             <span className="inline-block bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-bold mb-6">
               Get Mumm {t("Corporate", "للشركات")}
             </span>
@@ -147,14 +148,15 @@ export default function ForOfficesPage() {
             </p>
           </div>
           
-          <motion.div 
-            variants={staggerContainer}
+          <motion.div
+            variants={sectionStagger}
             initial="initial"
             whileInView="whileInView"
+            viewport={{ once: true, margin: "-80px" }}
             className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8"
           >
             {benefits.map((benefit, i) => (
-              <motion.div key={i} variants={staggerItem} className="bg-background border rounded-3xl p-8 hover:shadow-lg transition-shadow">
+              <motion.div key={i} variants={sectionItem} className="bg-background border rounded-3xl p-8 hover:shadow-lg transition-shadow">
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
                   {benefit.icon}
                 </div>

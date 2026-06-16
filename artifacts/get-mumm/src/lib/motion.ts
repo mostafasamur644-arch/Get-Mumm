@@ -121,25 +121,14 @@ export const fadeUpTransition = (delay = 0): Transition => ({
   delay,
 });
 
-// ─── Backward-compat exports (used by home.tsx, for-offices.tsx etc.) ────────
-export const fadeInUp = {
-  initial: { opacity: 0, y: 32 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.6, ease: ease.out },
+// ─── Animate-mode Stagger (no scroll trigger — for in-page reveals) ─────────
+// Use with initial="hidden" animate="show" (not whileInView)
+export const animateStagger: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.3 } },
 };
 
-export const staggerContainer = {
-  initial: {},
-  whileInView: { transition: { staggerChildren: 0.11 } },
-  viewport: { once: true, margin: "-80px" },
-};
-
-export const staggerItem = {
-  initial: { opacity: 0, y: 22 },
-  whileInView: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.52, ease: ease.out },
-  },
+export const animateFadeUp: Variants = {
+  hidden: { opacity: 0, y: 32 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: ease.out } },
 };
