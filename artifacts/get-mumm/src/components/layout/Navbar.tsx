@@ -2,11 +2,14 @@ import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCart } from "@/contexts/CartContext";
-import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Moon, Sun, Globe, User, Phone, X, LogIn, ShoppingCart } from "lucide-react";
+import { Menu, Moon, Sun, Globe, User, X, LogIn, ShoppingCart, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AuthModal } from "@/components/auth/AuthModal";
+
+/* ─── tiny icon-button shared style ─────────────────────────────────────── */
+const iconBtn =
+  "relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors shrink-0";
 
 export function Navbar() {
   const { t, language, setLanguage, isRtl } = useLanguage();
@@ -17,10 +20,11 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authOpen, setAuthOpen]             = useState(false);
   const [authTab, setAuthTab]               = useState<"login" | "register">("login");
+  const [notifCount]                        = useState(2); // placeholder — replace with real data
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -32,12 +36,12 @@ export function Navbar() {
   }, [mobileMenuOpen, authOpen]);
 
   const navLinks = [
-    { href: "/",            label: t("Home",       "الرئيسية") },
-    { href: "/menu",        label: t("Menu",        "المنيو")   },
-    { href: "/for-offices", label: t("For Offices", "للشركات")  },
-    { href: "/about",       label: t("About Us",    "من نحن")   },
-    { href: "/blog",        label: t("Blog",        "المدونة")  },
-    { href: "/contact",     label: t("Contact",     "تواصل")    },
+    { href: "/",            label: t("Home",        "الرئيسية") },
+    { href: "/menu",        label: t("Menu",         "المنيو")   },
+    { href: "/for-offices", label: t("For Offices",  "للشركات")  },
+    { href: "/about",       label: t("About Us",     "من نحن")   },
+    { href: "/blog",        label: t("Blog",         "المدونة")  },
+    { href: "/contact",     label: t("Contact",      "تواصل")    },
   ];
 
   const toggleLanguage = () => setLanguage(language === "en" ? "ar" : "en");
@@ -51,157 +55,186 @@ export function Navbar() {
 
   return (
     <>
-      {/* ── Main header bar ──────────────────────────────────────────────── */}
+      {/* ── Main header ──────────────────────────────────────────────────── */}
       <header
         className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? "bg-background/95 backdrop-blur-md border-b border-border shadow-sm py-2"
-            : "bg-transparent py-4"
+          isScrolled ? "py-2" : "py-3"
         }`}
       >
-        <div className="container mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
+        {/* Inner pill — floats when scrolled */}
+        <motion.div
+          animate={isScrolled ? "scrolled" : "top"}
+          variants={{
+            top:      { borderRadius: "0px",   boxShadow: "none" },
+            scrolled: { borderRadius: "999px",  boxShadow: "0 4px 24px 0 hsl(var(--foreground)/0.08)" },
+          }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          className={`mx-auto transition-all duration-300 ${
+            isScrolled
+              ? "max-w-4xl px-3 bg-background/95 backdrop-blur-md border border-border"
+              : "max-w-7xl px-4 sm:px-6 bg-transparent border border-transparent"
+          }`}
+        >
+          <div className="flex items-center h-12 gap-2">
 
-          {/* Logo */}
-          <Link href="/" className="flex flex-col items-start shrink-0 z-50">
-            <span className="text-xl sm:text-2xl font-serif font-bold text-primary tracking-tight leading-none">
-              Get Mumm
-            </span>
-            <span className="text-[9px] uppercase tracking-widest text-muted-foreground hidden sm:block mt-0.5">
-              {t("Homemade Meals Delivered with Love", "وجبات منزلية بنكهة الحب")}
-            </span>
-          </Link>
+            {/* ── Logo (absolute-center on mobile) ─────────────────────── */}
+            {/* Mobile: hamburger on left, logo centered, icons on right   */}
 
-          {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`relative px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:text-primary hover:bg-primary/8 ${
-                  location === link.href ? "text-primary" : "text-foreground/80"
-                }`}
-              >
-                {link.label}
-                {location === link.href && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    className="absolute inset-0 bg-primary/10 rounded-lg"
-                    transition={{ type: "spring", stiffness: 380, damping: 35 }}
-                  />
-                )}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Actions row */}
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            {/* Language toggle */}
+            {/* Hamburger — left side on mobile only */}
             <button
-              onClick={toggleLanguage}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold border border-border hover:border-primary hover:text-primary transition-colors"
-              aria-label="Toggle language"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              {language === "en" ? "عر" : "EN"}
-            </button>
-
-            {/* Theme toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-
-            {/* Auth icon */}
-            <button
-              onClick={() => openAuth("login")}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Sign in"
-            >
-              <User className="h-4 w-4" />
-            </button>
-
-            {/* Cart icon with animated badge */}
-            <button
-              onClick={openCart}
-              className="relative p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Open cart"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <AnimatePresence>
-                {totalItems > 0 && (
-                  <motion.span
-                    key="cart-badge"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                    className={`absolute -top-0.5 ${isRtl ? "-left-0.5" : "-right-0.5"} min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow`}
-                  >
-                    {totalItems > 99 ? "99+" : totalItems}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-
-            {/* Phone — md+ only */}
-            <a
-              href="tel:+201027671111"
-              className="hidden md:flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors px-2"
-            >
-              <Phone className="h-3.5 w-3.5" />
-              010 2767 1111
-            </a>
-
-            {/* Order Now — sm+ */}
-            <Link href="/menu">
-              <Button
-                size="sm"
-                className="hidden sm:inline-flex rounded-full bg-primary text-primary-foreground hover:bg-primary/85 font-bold shadow-sm px-5"
-              >
-                {t("Order Now", "اطلب الآن")}
-              </Button>
-            </Link>
-
-            {/* Hamburger — always shows ≡ */}
-            <button
-              className="lg:hidden p-2 rounded-full hover:bg-muted transition-colors"
+              className={`lg:hidden ${iconBtn}`}
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </button>
+
+            {/* Logo */}
+            <Link
+              href="/"
+              className="flex flex-col items-center lg:items-start shrink-0 absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 lg:left-auto z-50"
+            >
+              <span className="text-xl font-serif font-bold text-primary tracking-tight leading-none">
+                Get Mumm
+              </span>
+              <span className="text-[8px] uppercase tracking-widest text-muted-foreground hidden sm:block mt-0.5">
+                {t("Homemade Meals Delivered with Love", "وجبات منزلية بنكهة الحب")}
+              </span>
+            </Link>
+
+            {/* Desktop nav — centered */}
+            <nav className="hidden lg:flex items-center gap-0.5 mx-auto">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`relative px-3 py-1.5 text-sm font-medium rounded-full transition-colors hover:text-primary hover:bg-primary/8 ${
+                    location === link.href ? "text-primary" : "text-foreground/75"
+                  }`}
+                >
+                  {link.label}
+                  {location === link.href && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="absolute inset-0 bg-primary/10 rounded-full"
+                      transition={{ type: "spring", stiffness: 400, damping: 38 }}
+                    />
+                  )}
+                </Link>
+              ))}
+            </nav>
+
+            {/* ── Actions — right side ──────────────────────────────────── */}
+            <div className={`flex items-center gap-0.5 ${isRtl ? "mr-auto lg:mr-0" : "ml-auto lg:ml-0"}`}>
+
+              {/* Language toggle */}
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold border border-border hover:border-primary hover:text-primary transition-colors"
+                aria-label="Toggle language"
+              >
+                <Globe className="h-3 w-3" />
+                {language === "en" ? "عر" : "EN"}
+              </button>
+
+              {/* Theme */}
+              <button onClick={toggleTheme} className={iconBtn} aria-label="Toggle theme">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={theme}
+                    initial={{ rotate: -30, opacity: 0, scale: 0.7 }}
+                    animate={{ rotate: 0,   opacity: 1, scale: 1   }}
+                    exit={   { rotate:  30, opacity: 0, scale: 0.7 }}
+                    transition={{ duration: 0.22 }}
+                    className="flex items-center justify-center"
+                  >
+                    {theme === "dark"
+                      ? <Sun  className="h-4 w-4" />
+                      : <Moon className="h-4 w-4" />
+                    }
+                  </motion.span>
+                </AnimatePresence>
+              </button>
+
+              {/* Notification bell */}
+              <button
+                className={iconBtn}
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+                <AnimatePresence>
+                  {notifCount > 0 && (
+                    <motion.span
+                      key="notif-badge"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 440, damping: 22 }}
+                      className={`absolute top-0.5 ${isRtl ? "left-0.5" : "right-0.5"} min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 shadow-sm`}
+                    >
+                      {notifCount}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </button>
+
+              {/* Auth */}
+              <button
+                onClick={() => openAuth("login")}
+                className={`${iconBtn} hidden sm:flex`}
+                aria-label="Sign in"
+              >
+                <User className="h-4 w-4" />
+              </button>
+
+              {/* Cart */}
+              <button onClick={openCart} className={iconBtn} aria-label="Open cart">
+                <ShoppingCart className="h-4 w-4" />
+                <AnimatePresence>
+                  {totalItems > 0 && (
+                    <motion.span
+                      key="cart-badge"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                      className={`absolute top-0.5 ${isRtl ? "left-0.5" : "right-0.5"} min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 shadow-sm`}
+                    >
+                      {totalItems > 99 ? "99+" : totalItems}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </button>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </header>
 
-      {/* ── Mobile overlay — z-[55] covers header (z-50) ────────────────── */}
+      {/* ── Mobile overlay ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
             key="mobile-menu"
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="fixed inset-0 z-[55] bg-background lg:hidden flex flex-col overflow-y-auto"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0   }}
+            exit={{ opacity: 0, y: -16    }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 z-[55] bg-background lg:hidden flex flex-col"
             dir={isRtl ? "rtl" : "ltr"}
           >
             {/* Overlay header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
-              <div>
-                <span className="text-xl font-serif font-bold text-primary block leading-none">Get Mumm</span>
-                <span className="text-[9px] uppercase tracking-widest text-muted-foreground mt-0.5 block">
+              <div className="flex flex-col">
+                <span className="text-xl font-serif font-bold text-primary leading-none">Get Mumm</span>
+                <span className="text-[8px] uppercase tracking-widest text-muted-foreground mt-1">
                   {t("Homemade Meals Delivered with Love", "وجبات منزلية بنكهة الحب")}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                {/* Cart in overlay header too */}
+              <div className="flex items-center gap-1">
+                {/* Cart */}
                 <button
                   onClick={() => { setMobileMenuOpen(false); openCart(); }}
-                  className="relative p-2 rounded-full hover:bg-muted transition-colors"
+                  className={iconBtn}
                 >
                   <ShoppingCart className="h-5 w-5" />
                   <AnimatePresence>
@@ -211,15 +244,16 @@ export function Navbar() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         exit={{ scale: 0 }}
-                        className={`absolute -top-0.5 ${isRtl ? "-left-0.5" : "-right-0.5"} min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1`}
+                        className={`absolute top-0.5 ${isRtl ? "left-0.5" : "right-0.5"} min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5`}
                       >
                         {totalItems}
                       </motion.span>
                     )}
                   </AnimatePresence>
                 </button>
+                {/* Close */}
                 <button
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                  className={iconBtn}
                   onClick={() => setMobileMenuOpen(false)}
                   aria-label="Close menu"
                 >
@@ -229,18 +263,18 @@ export function Navbar() {
             </div>
 
             {/* Nav links */}
-            <nav className="flex flex-col px-4 pt-4 gap-1 flex-1">
+            <nav className="flex flex-col px-4 pt-4 gap-1 flex-1 overflow-y-auto">
               {navLinks.map((link, i) => (
                 <motion.div
                   key={link.href}
-                  initial={{ opacity: 0, x: isRtl ? 16 : -16 }}
+                  initial={{ opacity: 0, x: isRtl ? 18 : -18 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.04, duration: 0.22 }}
+                  transition={{ delay: i * 0.04, duration: 0.22, ease: [0.22,1,0.36,1] }}
                 >
                   <Link
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center py-3.5 px-4 rounded-xl text-lg font-medium transition-colors ${
+                    className={`flex items-center py-3.5 px-4 rounded-2xl text-lg font-medium transition-colors ${
                       location === link.href
                         ? "bg-primary/10 text-primary font-bold"
                         : "text-foreground hover:bg-muted"
@@ -256,65 +290,48 @@ export function Navbar() {
             </nav>
 
             {/* Bottom section */}
-            <div className="px-4 pb-8 pt-5 space-y-3 border-t border-border">
-
-              {/* Auth buttons */}
+            <div className="px-4 pb-8 pt-4 space-y-2.5 border-t border-border">
+              {/* Auth */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => openAuth("login")}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-semibold"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-semibold"
                 >
                   <LogIn className="h-4 w-4" />
                   {t("Sign In", "تسجيل الدخول")}
                 </button>
                 <button
                   onClick={() => openAuth("register")}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/85 transition-colors text-sm font-semibold"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/85 transition-colors text-sm font-semibold"
                 >
                   <User className="h-4 w-4" />
                   {t("Register", "إنشاء حساب")}
                 </button>
               </div>
 
-              {/* Utility toggles */}
+              {/* Toggles */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={toggleLanguage}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-medium"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-medium"
                 >
                   <Globe className="h-4 w-4" />
                   {language === "en" ? "العربية" : "English"}
                 </button>
                 <button
                   onClick={toggleTheme}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-medium"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-medium"
                 >
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                   {theme === "dark" ? t("Light Mode", "الوضع الفاتح") : t("Dark Mode", "الوضع الداكن")}
                 </button>
               </div>
-
-              {/* Order Now */}
-              <Link href="/menu" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full rounded-xl h-12 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/85">
-                  {t("Order Now", "اطلب الآن")}
-                </Button>
-              </Link>
-
-              {/* Phone */}
-              <a
-                href="tel:+201027671111"
-                className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-              >
-                <Phone className="h-4 w-4" />
-                +20 10 2767 1111
-              </a>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Auth Modal ──────────────────────────────────────────────────────── */}
+      {/* ── Auth Modal ─────────────────────────────────────────────────── */}
       <AuthModal
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
