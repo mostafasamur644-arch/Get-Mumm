@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { pageVariants } from "@/lib/motion";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -31,7 +32,15 @@ import OrderConfirmationPage from "@/pages/order-confirmation";
 import OrderTrackingPage from "@/pages/order-tracking";
 import NotFound from "@/pages/not-found";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10,
+      retry: 2,
+    },
+  },
+});
 
 function AnimatedRoutes() {
   const [location] = useLocation();
@@ -75,12 +84,12 @@ function AnimatedRoutes() {
 function Router() {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
+      <ScrollToTop />
       <Navbar />
       <main className="flex-1 flex flex-col">
         <AnimatedRoutes />
       </main>
       <Footer />
-      {/* Cart drawer lives outside page flow so it persists across route changes */}
       <CartDrawer />
     </div>
   );
@@ -89,7 +98,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="system" storageKey="get-mumm:theme">
         <LanguageProvider>
           <CartProvider>
             <TooltipProvider>

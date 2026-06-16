@@ -3,6 +3,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useGetFeaturedItems, useListCategories, useListTestimonials } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { WaveDivider } from "@/components/ui/WaveDivider";
+import { useSEO } from "@/hooks/useSEO";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { Star, ArrowRight, ArrowLeft } from "lucide-react";
@@ -23,6 +24,14 @@ export default function Home() {
   const { data: featuredItems, isLoading: isFeaturedLoading } = useGetFeaturedItems();
   const { data: categories, isLoading: isCategoriesLoading } = useListCategories();
   const { data: testimonials, isLoading: isTestimonialsLoading } = useListTestimonials();
+
+  useSEO({
+    title: t("Homemade Meals Delivered with Love", "وجبات منزلية بنكهة الحب"),
+    description: t(
+      "Experience the warmth of a grandmother's kitchen, delivered fresh to your door in Cairo and Giza. Support local women and enjoy authentic Egyptian flavors.",
+      "استمتع بدفء مطبخ الجدة، يصلك طازجاً إلى باب منزلك في القاهرة والجيزة. ادعم النساء المحليات واستمتع بالنكهات المصرية الأصيلة."
+    ),
+  });
 
   const heroHeadline = t(
     "Homemade Meals Delivered with Love",

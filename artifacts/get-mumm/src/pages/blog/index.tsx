@@ -8,6 +8,7 @@ import { useState, useMemo, useEffect } from "react";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerGrid, cardVariant, sectionReveal } from "@/lib/motion";
+import { useSEO } from "@/hooks/useSEO";
 
 const ITEMS_PER_PAGE = 6;
 type FilterType = "all" | "blog" | "recipe";
@@ -15,6 +16,14 @@ type FilterType = "all" | "blog" | "recipe";
 export default function BlogPage() {
   const { t, isRtl } = useLanguage();
   const [filter, setFilter] = useState<FilterType>("all");
+
+  useSEO({
+    title: t("Stories & Recipes", "قصص ووصفات"),
+    description: t(
+      "Discover Egypt's culinary heritage, learn from our chefs, and try our favorite homemade recipes.",
+      "اكتشف التراث الغني للطبخ المصري، تعلم من طهاتنا، وجرب وصفاتنا المنزلية المفضلة."
+    ),
+  });
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

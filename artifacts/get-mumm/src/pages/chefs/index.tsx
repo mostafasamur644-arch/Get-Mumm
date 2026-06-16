@@ -6,10 +6,19 @@ import { Star, Search, X, UtensilsCrossed } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { staggerGrid, cardVariant, sectionReveal } from "@/lib/motion";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function ChefsPage() {
   const { t, isRtl } = useLanguage();
   const { data: chefs, isLoading } = useListChefs();
+
+  useSEO({
+    title: t("Meet Our Chefs", "تعرف على طهاتنا"),
+    description: t(
+      "Talented women crafting authentic Egyptian meals from their homes to yours. Every dish has a story.",
+      "نساء موهوبات يجهزن وجبات مصرية أصيلة من منازلهن إليكم. كل طبق له قصة."
+    ),
+  });
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
