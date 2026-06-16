@@ -136,7 +136,7 @@ export default function ChefsPage() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-6"
+            className="-mx-4 sm:-mx-6 px-4 sm:px-6 flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-6"
             data-testid="filter-specialties"
           >
             <button
