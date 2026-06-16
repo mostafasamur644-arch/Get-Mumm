@@ -5,3 +5,5 @@ export * from "./blog_posts";
 export * from "./testimonials";
 export * from "./subscription_plans";
 export * from "./contacts";
+export * from "./users";
+export * from "./orders";

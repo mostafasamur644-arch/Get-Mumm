@@ -1,27 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCart, PlacedOrder, FREE_DELIVERY_THRESHOLD } from "@/contexts/CartContext";
+import { AuthModal } from "@/components/auth/AuthModal";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, MapPin, Phone, User, FileText, CreditCard, Banknote, ChevronRight, Truck } from "lucide-react";
+import { ShoppingBag, MapPin, Phone, User, FileText, CreditCard, Banknote, ChevronRight, Truck, Lock } from "lucide-react";
 import { sectionReveal, ease } from "@/lib/motion";
 import { Link } from "wouter";
 import { checkout, common, cart, home, nav } from "@/locales";
+import { useToast } from "@/hooks/use-toast";
 
 const AREAS_EN = ["Maadi", "New Cairo", "Heliopolis", "Zamalek", "Downtown Cairo", "Dokki", "Mohandessin", "Nasr City", "Shubra", "6th of October", "Sheikh Zayed"];
 const AREAS_AR = ["المعادي", "القاهرة الجديدة", "مصر الجديدة (هليوبوليس)", "الزمالك", "وسط القاهرة", "الدقي", "المهندسين", "مدينة نصر", "شبرا", "السادس من أكتوبر", "الشيخ زايد"];
 
-function generateOrderId() {
-  return "MM" + Math.floor(100000 + Math.random() * 900000).toString();
-}
-
 export default function CheckoutPage() {
   const { t, tx, isRtl } = useLanguage();
+  const { user, token } = useAuth();
   const { items, subtotal, deliveryFee, total, clearCart, setLastOrder } = useCart();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
 
   const [form, setForm] = useState({
     name: "", phone: "", area: "", street: "", building: "", notes: "",
@@ -29,6 +33,17 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [paymobUrl, setPaymobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || user.name,
+        phone: prev.phone || (user.phone ?? ""),
+      }));
+    }
+  }, [user]);
 
   const set = (field: string, val: string) => {
     setForm((prev) => ({ ...prev, [field]: val }));
@@ -45,32 +60,102 @@ export default function CheckoutPage() {
     return e;
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
+    if (!user) {
+      setAuthTab("login");
+      setAuthModalOpen(true);
+      return;
+    }
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     if (items.length === 0) return;
 
     setLoading(true);
-    setTimeout(() => {
-      const order: PlacedOrder = {
-        id: generateOrderId(),
-        items: [...items],
-        subtotal,
-        deliveryFee,
-        total,
-        customerName: form.name,
-        phone: form.phone,
-        area: form.area,
-        street: form.street,
-        building: form.building,
-        notes: form.notes,
-        placedAt: new Date().toISOString(),
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          customerName: form.name,
+          phone: form.phone,
+          area: form.area,
+          street: form.street,
+          building: form.building,
+          notes: form.notes,
+          items: items.map((i) => ({ id: i.id, name: i.name, nameAr: i.nameAr, price: i.price, qty: i.qty, imageUrl: i.imageUrl })),
+          subtotal,
+          deliveryFee,
+          total,
+          paymentMethod,
+        }),
+      });
+
+      const data = await res.json() as {
+        order?: { orderId: string; customerName: string; phone: string; area: string; street: string; building: string; notes?: string | null; items: unknown[]; subtotal: number; deliveryFee: number; total: number; paymentMethod: string; placedAt: string };
+        iframeUrl?: string;
+        requiresPayment?: boolean;
+        error?: string;
       };
-      setLastOrder(order);
-      clearCart();
-      navigate("/order-confirmation");
-    }, 1200);
+
+      if (!res.ok) throw new Error(data.error ?? "Order failed");
+
+      if (data.requiresPayment && data.iframeUrl) {
+        setPaymobUrl(data.iframeUrl);
+        return;
+      }
+
+      if (data.order) {
+        const o = data.order;
+        const placed: PlacedOrder = {
+          id: o.orderId,
+          items: o.items as PlacedOrder["items"],
+          subtotal: o.subtotal,
+          deliveryFee: o.deliveryFee,
+          total: o.total,
+          customerName: o.customerName,
+          phone: o.phone,
+          area: o.area,
+          street: o.street,
+          building: o.building,
+          notes: o.notes ?? "",
+          placedAt: o.placedAt,
+        };
+        setLastOrder(placed);
+        clearCart();
+        navigate("/order-confirmation");
+      }
+    } catch (err) {
+      toast({
+        title: t("Order failed", "فشل الطلب"),
+        description: err instanceof Error ? err.message : t("Something went wrong", "حدث خطأ ما"),
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (paymobUrl) {
+    return (
+      <PageWrapper>
+        <div className="pt-24 pb-8 container mx-auto px-4">
+          <h2 className="text-xl font-bold mb-4 text-center">{t("Complete your payment", "أكمل عملية الدفع")}</h2>
+          <iframe
+            src={paymobUrl}
+            className="w-full rounded-2xl border border-border"
+            style={{ height: "600px" }}
+            title="Paymob Payment"
+          />
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            {t("Secured by Paymob", "مؤمَّن بواسطة Paymob")}
+          </p>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   if (items.length === 0 && !loading) {
     return (
@@ -99,12 +184,45 @@ export default function CheckoutPage() {
             <span className="text-foreground font-medium">{tx(checkout.title)}</span>
           </nav>
 
-          <motion.h1
-            {...sectionReveal}
-            className="text-3xl font-serif font-bold mb-8"
-          >
+          <motion.h1 {...sectionReveal} className="text-3xl font-serif font-bold mb-8">
             {tx(checkout.title)}
           </motion.h1>
+
+          {/* Auth nudge banner — shown when not logged in */}
+          <AnimatePresence>
+            {!user && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="mb-6 flex items-center gap-3 px-5 py-4 rounded-2xl border border-primary/30 bg-primary/8"
+              >
+                <Lock className="w-5 h-5 text-primary shrink-0" />
+                <p className="text-sm flex-1">
+                  <span className="font-semibold text-primary">
+                    {t("Sign in to place your order.", "سجّل دخولك لإتمام طلبك.")}
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    {t("Your cart is saved.", "سلّتك محفوظة.")}
+                  </span>
+                </p>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => { setAuthTab("login"); setAuthModalOpen(true); }}
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors"
+                  >
+                    {tx(common.signIn)}
+                  </button>
+                  <button
+                    onClick={() => { setAuthTab("register"); setAuthModalOpen(true); }}
+                    className="px-4 py-2 rounded-xl border border-border text-xs font-semibold hover:border-primary hover:text-primary transition-colors"
+                  >
+                    {tx(common.register)}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -243,20 +361,25 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
-                  {/* Card — coming soon */}
-                  <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-border opacity-50 cursor-not-allowed">
-                    <div className="w-5 h-5 rounded-full border-2 border-muted-foreground shrink-0" />
+                  {/* Credit card via Paymob */}
+                  <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === "card" ? "border-primary bg-primary/8" : "border-border hover:border-primary/50"
+                  }`}>
+                    <input type="radio" className="sr-only" checked={paymentMethod === "card"} onChange={() => setPaymentMethod("card")} />
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "card" ? "border-primary" : "border-muted-foreground"}`}>
+                      {paymentMethod === "card" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    </div>
                     <CreditCard className="w-6 h-6 text-blue-400 shrink-0" />
                     <div>
                       <p className="font-semibold flex items-center gap-2">
                         {tx(checkout.creditDebitCard)}
-                        <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-normal">
-                          {tx(home.comingSoon)}
+                        <span className="text-[10px] bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded-full font-medium border border-blue-400/20">
+                          Paymob
                         </span>
                       </p>
                       <p className="text-sm text-muted-foreground">{tx(checkout.cardBrands)}</p>
                     </div>
-                  </div>
+                  </label>
                 </div>
               </motion.section>
             </div>
@@ -275,7 +398,6 @@ export default function CheckoutPage() {
                   <span className="text-sm font-normal text-muted-foreground">({items.length} {tx(checkout.items)})</span>
                 </h2>
 
-                {/* Item list */}
                 <div className="space-y-3 mb-4 max-h-56 overflow-y-auto">
                   {items.map((item) => (
                     <div key={item.id} className="flex items-center gap-3">
@@ -293,7 +415,6 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                {/* Totals */}
                 <div className="border-t border-border pt-4 space-y-2 text-sm mb-5">
                   <div className="flex justify-between text-muted-foreground">
                     <span>{tx(cart.subtotal)}</span>
@@ -318,7 +439,6 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* CTA */}
                 <Button
                   onClick={placeOrder}
                   disabled={loading}
@@ -329,10 +449,16 @@ export default function CheckoutPage() {
                       <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                       {tx(checkout.placingOrder)}
                     </span>
+                  ) : !user ? (
+                    <span className="flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      {t("Sign in to order", "سجّل دخولك للطلب")}
+                    </span>
                   ) : (
                     tx(checkout.placeOrder)
                   )}
                 </Button>
+
                 <p className="text-center text-xs text-muted-foreground mt-3">
                   {tx(checkout.estimatedDelivery)}
                 </p>
@@ -341,6 +467,12 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultTab={authTab}
+      />
     </PageWrapper>
   );
 }

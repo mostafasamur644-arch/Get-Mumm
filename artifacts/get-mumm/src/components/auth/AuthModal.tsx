@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Eye, EyeOff, Mail, Lock, User, LogIn, UserPlus, ShieldCheck } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ease } from "@/lib/motion";
 import { auth, common } from "@/locales";
@@ -14,41 +15,59 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalProps) {
   const { t, tx, isRtl } = useLanguage();
+  const { login, register } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<"login" | "register">(defaultTab);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [error, setError] = useState("");
 
   const [loginForm, setLoginForm]   = useState({ email: "", password: "" });
   const [regForm, setRegForm]       = useState({ name: "", email: "", password: "" });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginForm.email || !loginForm.password) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      await login(loginForm.email, loginForm.password);
       toast({
         title: t("Welcome back!", "أهلاً بعودتك!"),
         description: t("You're signed in to Get Mumm.", "تم تسجيل دخولك إلى ممم."),
       });
       onClose();
-    }, 900);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("Login failed. Please try again.", "فشل تسجيل الدخول. حاول مرة أخرى."));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regForm.name || !regForm.email || !regForm.password) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      await register(regForm.name, regForm.email, regForm.password);
       toast({
         title: tx(auth.accountCreated),
         description: tx(auth.welcomeToMumm),
       });
       onClose();
-    }, 900);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("Registration failed. Please try again.", "فشل التسجيل. حاول مرة أخرى."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchTab = (t_: "login" | "register") => {
+    setTab(t_);
+    setShowPass(false);
+    setError("");
   };
 
   const iconSide = (side: "l" | "r") => {
@@ -68,7 +87,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
@@ -79,7 +97,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
             onClick={onClose}
           />
 
-          {/* Modal */}
           <motion.div
             key="modal"
             initial={{ opacity: 0, y: 36, scale: 0.94 }}
@@ -89,7 +106,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
             className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[61] max-w-sm mx-auto"
             dir={isRtl ? "rtl" : "ltr"}
           >
-            {/* Card */}
             <div
               className="relative overflow-hidden rounded-[28px]"
               style={{
@@ -98,7 +114,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                 boxShadow: "0 40px 80px rgba(0,0,0,0.65), 0 0 0 0.5px rgba(255,255,255,0.04) inset",
               }}
             >
-              {/* Amber top glow */}
               <div
                 className="pointer-events-none absolute inset-x-0 top-0 h-40"
                 style={{
@@ -106,7 +121,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                 }}
               />
 
-              {/* Close */}
               <button
                 onClick={onClose}
                 className="absolute top-4 z-10 p-1.5 rounded-full transition-colors"
@@ -122,7 +136,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
               </button>
 
               <div className="px-7 pb-7 pt-6 relative">
-                {/* Shield icon badge */}
                 <div className="flex justify-center mb-4">
                   <div
                     className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center"
@@ -136,7 +149,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   </div>
                 </div>
 
-                {/* Title */}
                 <div className="text-center mb-5">
                   <h2 className="text-xl font-bold text-white tracking-tight mb-1">
                     {tab === "login" ? tx(auth.welcomeBack) : tx(auth.joinGetMumm)}
@@ -165,7 +177,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   {(["login", "register"] as const).map((t_) => (
                     <button
                       key={t_}
-                      onClick={() => { setTab(t_); setShowPass(false); }}
+                      onClick={() => switchTab(t_)}
                       className="relative z-10 flex-1 py-2 text-xs font-semibold rounded-[10px] transition-colors"
                       style={{ color: tab === t_ ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.35)" }}
                     >
@@ -174,7 +186,21 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   ))}
                 </div>
 
-                {/* Forms */}
+                {/* Error */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-3 px-3 py-2 rounded-xl text-xs font-medium"
+                      style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <AnimatePresence mode="wait">
                   {tab === "login" ? (
                     <motion.form
@@ -186,12 +212,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                       onSubmit={handleLogin}
                       className="space-y-3"
                     >
-                      {/* Email */}
                       <div>
-                        <label
-                          className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase"
-                          style={{ color: "rgba(255,255,255,0.38)" }}
-                        >
+                        <label className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase" style={{ color: "rgba(255,255,255,0.38)" }}>
                           {tx(auth.emailAddress)}
                         </label>
                         <div className="relative">
@@ -207,12 +229,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                         </div>
                       </div>
 
-                      {/* Password */}
                       <div>
-                        <label
-                          className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase"
-                          style={{ color: "rgba(255,255,255,0.38)" }}
-                        >
+                        <label className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase" style={{ color: "rgba(255,255,255,0.38)" }}>
                           {tx(auth.passcode)}
                         </label>
                         <div className="relative">
@@ -236,66 +254,47 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                         </div>
                       </div>
 
-                      {/* Remember + Forgot */}
                       <div className="flex items-center justify-between pt-0.5">
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
                             checked={remember}
                             onChange={(e) => setRemember(e.target.checked)}
-                            className="w-3.5 h-3.5 rounded accent-amber-400"
+                            className="w-3.5 h-3.5 rounded"
                             style={{ accentColor: "#f5c83a" }}
                           />
                           <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
                             {tx(auth.maintainSession)}
                           </span>
                         </label>
-                        <button
-                          type="button"
-                          className="text-[11px] font-medium transition-colors"
-                          style={{ color: "#f5c83a" }}
-                        >
+                        <button type="button" className="text-[11px] font-medium transition-colors" style={{ color: "#f5c83a" }}>
                           {tx(auth.recoverAccess)}
                         </button>
                       </div>
 
-                      {/* Submit */}
                       <button
                         type="submit"
                         disabled={loading}
                         className="w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 mt-1 transition-all active:scale-[0.98] disabled:opacity-70"
                         style={{
-                          background: loading
-                            ? "rgba(245,200,60,0.5)"
-                            : "linear-gradient(135deg, #f5c83a 0%, #e8a020 100%)",
+                          background: loading ? "rgba(245,200,60,0.5)" : "linear-gradient(135deg, #f5c83a 0%, #e8a020 100%)",
                           color: "#1a1300",
                           boxShadow: loading ? "none" : "0 6px 24px rgba(245,185,40,0.30)",
                         }}
                       >
                         {loading ? (
                           <>
-                            <span
-                              className="w-4 h-4 rounded-full border-2 animate-spin"
-                              style={{ borderColor: "rgba(0,0,0,0.15)", borderTopColor: "rgba(0,0,0,0.55)" }}
-                            />
+                            <span className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(0,0,0,0.15)", borderTopColor: "rgba(0,0,0,0.55)" }} />
                             {tx(auth.signingIn)}
                           </>
                         ) : (
-                          <>
-                            {tx(auth.authenticate)}
-                            <LogIn className="w-4 h-4" />
-                          </>
+                          <>{tx(auth.authenticate)}<LogIn className="w-4 h-4" /></>
                         )}
                       </button>
 
                       <p className="text-center text-[11px] pt-1" style={{ color: "rgba(255,255,255,0.28)" }}>
                         {tx(auth.noAccount)}{" "}
-                        <button
-                          type="button"
-                          onClick={() => setTab("register")}
-                          className="font-semibold transition-colors"
-                          style={{ color: "#f5c83a" }}
-                        >
+                        <button type="button" onClick={() => switchTab("register")} className="font-semibold transition-colors" style={{ color: "#f5c83a" }}>
                           {tx(auth.registerNow)}
                         </button>
                       </p>
@@ -310,12 +309,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                       onSubmit={handleRegister}
                       className="space-y-3"
                     >
-                      {/* Name */}
                       <div>
-                        <label
-                          className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase"
-                          style={{ color: "rgba(255,255,255,0.38)" }}
-                        >
+                        <label className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase" style={{ color: "rgba(255,255,255,0.38)" }}>
                           {tx(common.fullName)}
                         </label>
                         <div className="relative">
@@ -331,12 +326,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                         </div>
                       </div>
 
-                      {/* Email */}
                       <div>
-                        <label
-                          className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase"
-                          style={{ color: "rgba(255,255,255,0.38)" }}
-                        >
+                        <label className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase" style={{ color: "rgba(255,255,255,0.38)" }}>
                           {tx(auth.emailAddress)}
                         </label>
                         <div className="relative">
@@ -352,12 +343,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                         </div>
                       </div>
 
-                      {/* Password */}
                       <div>
-                        <label
-                          className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase"
-                          style={{ color: "rgba(255,255,255,0.38)" }}
-                        >
+                        <label className="block mb-1.5 text-[10px] font-semibold tracking-[0.11em] uppercase" style={{ color: "rgba(255,255,255,0.38)" }}>
                           {tx(auth.passcode)}
                         </label>
                         <div className="relative">
@@ -382,43 +369,29 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                         </div>
                       </div>
 
-                      {/* Submit */}
                       <button
                         type="submit"
                         disabled={loading}
                         className="w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 mt-1 transition-all active:scale-[0.98] disabled:opacity-70"
                         style={{
-                          background: loading
-                            ? "rgba(245,200,60,0.5)"
-                            : "linear-gradient(135deg, #f5c83a 0%, #e8a020 100%)",
+                          background: loading ? "rgba(245,200,60,0.5)" : "linear-gradient(135deg, #f5c83a 0%, #e8a020 100%)",
                           color: "#1a1300",
                           boxShadow: loading ? "none" : "0 6px 24px rgba(245,185,40,0.30)",
                         }}
                       >
                         {loading ? (
                           <>
-                            <span
-                              className="w-4 h-4 rounded-full border-2 animate-spin"
-                              style={{ borderColor: "rgba(0,0,0,0.15)", borderTopColor: "rgba(0,0,0,0.55)" }}
-                            />
+                            <span className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(0,0,0,0.15)", borderTopColor: "rgba(0,0,0,0.55)" }} />
                             {tx(auth.creatingAccount)}
                           </>
                         ) : (
-                          <>
-                            {tx(auth.createAccount)}
-                            <UserPlus className="w-4 h-4" />
-                          </>
+                          <>{tx(auth.createAccount)}<UserPlus className="w-4 h-4" /></>
                         )}
                       </button>
 
                       <p className="text-center text-[11px] pt-1" style={{ color: "rgba(255,255,255,0.28)" }}>
                         {tx(auth.alreadyHaveAccount)}{" "}
-                        <button
-                          type="button"
-                          onClick={() => setTab("login")}
-                          className="font-semibold transition-colors"
-                          style={{ color: "#f5c83a" }}
-                        >
+                        <button type="button" onClick={() => switchTab("login")} className="font-semibold transition-colors" style={{ color: "#f5c83a" }}>
                           {tx(common.signIn)}
                         </button>
                       </p>
@@ -426,7 +399,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   )}
                 </AnimatePresence>
 
-                {/* Divider + Social auth */}
                 <div className="mt-5">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
@@ -440,11 +412,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                     <button
                       type="button"
                       className="h-10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-                      style={{
-                        background: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        color: "rgba(255,255,255,0.6)",
-                      }}
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -457,11 +425,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                     <button
                       type="button"
                       className="h-10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
-                      style={{
-                        background: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        color: "rgba(255,255,255,0.6)",
-                      }}
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>

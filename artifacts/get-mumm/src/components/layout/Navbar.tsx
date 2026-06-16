@@ -2,13 +2,13 @@ import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Moon, Sun, Globe, User, X, LogIn, ShoppingCart, Bell } from "lucide-react";
+import { Menu, Moon, Sun, Globe, User, X, LogIn, ShoppingCart, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { nav, common } from "@/locales";
 
-/* ─── tiny icon-button shared style ─────────────────────────────────────── */
 const iconBtn =
   "relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors shrink-0";
 
@@ -16,12 +16,12 @@ export function Navbar() {
   const { tx, language, setLanguage, isRtl } = useLanguage();
   const { theme, setTheme } = useTheme();
   const { totalItems, openCart } = useCart();
+  const { user, logout } = useAuth();
   const [location] = useLocation();
   const [isScrolled, setIsScrolled]        = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authOpen, setAuthOpen]             = useState(false);
   const [authTab, setAuthTab]               = useState<"login" | "register">("login");
-  const [notifCount]                        = useState(2); // placeholder — replace with real data
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -54,6 +54,10 @@ export function Navbar() {
     setMobileMenuOpen(false);
   };
 
+  const userInitials = user
+    ? user.name.split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)
+    : "";
+
   return (
     <>
       {/* ── Main header ──────────────────────────────────────────────────── */}
@@ -62,7 +66,6 @@ export function Navbar() {
           isScrolled ? "py-2" : "py-3"
         }`}
       >
-        {/* Inner pill — floats when scrolled */}
         <motion.div
           animate={isScrolled ? "scrolled" : "top"}
           variants={{
@@ -78,7 +81,7 @@ export function Navbar() {
         >
           <div className="flex items-center h-12 gap-2">
 
-            {/* Hamburger — left side on mobile only */}
+            {/* Hamburger */}
             <button
               className={`lg:hidden ${iconBtn}`}
               onClick={() => setMobileMenuOpen(true)}
@@ -100,7 +103,7 @@ export function Navbar() {
               </span>
             </Link>
 
-            {/* Desktop nav — centered */}
+            {/* Desktop nav */}
             <nav className="hidden lg:flex items-center gap-0.5 mx-auto">
               {navLinks.map((link) => (
                 <Link
@@ -122,7 +125,7 @@ export function Navbar() {
               ))}
             </nav>
 
-            {/* ── Actions — right side ──────────────────────────────────── */}
+            {/* Actions */}
             <div className={`flex items-center gap-0.5 ${isRtl ? "mr-auto lg:mr-0" : "ml-auto lg:ml-0"}`}>
 
               {/* Language toggle */}
@@ -154,36 +157,34 @@ export function Navbar() {
                 </AnimatePresence>
               </button>
 
-              {/* Notification bell */}
-              <button
-                className={iconBtn}
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-                <AnimatePresence>
-                  {notifCount > 0 && (
-                    <motion.span
-                      key="notif-badge"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 440, damping: 22 }}
-                      className={`absolute top-0.5 ${isRtl ? "left-0.5" : "right-0.5"} min-w-[16px] h-4 bg-primary text-primary-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 shadow-sm`}
-                    >
-                      {notifCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-
-              {/* Auth */}
-              <button
-                onClick={() => openAuth("login")}
-                className={`${iconBtn} hidden sm:flex`}
-                aria-label="Sign in"
-              >
-                <User className="h-4 w-4" />
-              </button>
+              {/* Auth — avatar if logged in, icon if not */}
+              {user ? (
+                <div className="relative hidden sm:flex items-center gap-1">
+                  <div
+                    className="w-9 h-9 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center cursor-pointer select-none"
+                    title={user.name}
+                    onClick={() => logout()}
+                  >
+                    {userInitials}
+                  </div>
+                  <button
+                    onClick={() => logout()}
+                    className={`${iconBtn} text-muted-foreground hover:text-destructive`}
+                    title="Sign out"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => openAuth("login")}
+                  className={`${iconBtn} hidden sm:flex`}
+                  aria-label="Sign in"
+                >
+                  <User className="h-4 w-4" />
+                </button>
+              )}
 
               {/* Cart */}
               <button onClick={openCart} className={iconBtn} aria-label="Open cart">
@@ -220,7 +221,6 @@ export function Navbar() {
             className="fixed inset-0 z-[55] bg-background lg:hidden flex flex-col"
             dir={isRtl ? "rtl" : "ltr"}
           >
-            {/* Overlay header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
               <div className="flex flex-col">
                 <span className="text-xl font-serif font-bold text-primary leading-none">Get Mumm</span>
@@ -229,7 +229,6 @@ export function Navbar() {
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                {/* Cart */}
                 <button
                   onClick={() => { setMobileMenuOpen(false); openCart(); }}
                   className={iconBtn}
@@ -249,7 +248,6 @@ export function Navbar() {
                     )}
                   </AnimatePresence>
                 </button>
-                {/* Close */}
                 <button
                   className={iconBtn}
                   onClick={() => setMobileMenuOpen(false)}
@@ -260,7 +258,6 @@ export function Navbar() {
               </div>
             </div>
 
-            {/* Nav links */}
             <nav className="flex flex-col px-4 pt-4 gap-1 flex-1 overflow-y-auto">
               {navLinks.map((link, i) => (
                 <motion.div
@@ -287,27 +284,42 @@ export function Navbar() {
               ))}
             </nav>
 
-            {/* Bottom section */}
             <div className="px-4 pb-8 pt-4 space-y-2.5 border-t border-border">
-              {/* Auth */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => openAuth("login")}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-semibold"
-                >
-                  <LogIn className="h-4 w-4" />
-                  {tx(common.signIn)}
-                </button>
-                <button
-                  onClick={() => openAuth("register")}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/85 transition-colors text-sm font-semibold"
-                >
-                  <User className="h-4 w-4" />
-                  {tx(common.register)}
-                </button>
-              </div>
+              {user ? (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-primary/10">
+                  <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center shrink-0">
+                    {userInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{user.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => openAuth("login")}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-border hover:border-primary hover:text-primary transition-colors text-sm font-semibold"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    {tx(common.signIn)}
+                  </button>
+                  <button
+                    onClick={() => openAuth("register")}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/85 transition-colors text-sm font-semibold"
+                  >
+                    <User className="h-4 w-4" />
+                    {tx(common.register)}
+                  </button>
+                </div>
+              )}
 
-              {/* Toggles */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={toggleLanguage}

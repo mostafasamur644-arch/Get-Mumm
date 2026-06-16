@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { pageVariants } from "@/lib/motion";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 
@@ -118,6 +119,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="get-mumm:theme">
         <LanguageProvider>
+          <AuthProvider>
           <CartProvider>
             <TooltipProvider>
               <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
@@ -128,6 +130,7 @@ function App() {
               <Toaster />
             </TooltipProvider>
           </CartProvider>
+          </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
