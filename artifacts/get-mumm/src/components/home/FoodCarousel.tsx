@@ -163,7 +163,7 @@ export function FoodCarousel() {
         </svg>
       </div>
 
-      <div style={{ position: "relative", width: "100%", height: mobile ? "88vh" : "92vh", overflow: "hidden" }}>
+      <div style={{ position: "relative", width: "100%", height: mobile ? "88vh" : "92vh", overflow: "hidden", zIndex: 35 }}>
 
         {/* ── Grain overlay ──────────────────────────────────────────────── */}
         <div
