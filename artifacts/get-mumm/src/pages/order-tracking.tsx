@@ -192,17 +192,23 @@ export default function OrderTrackingPage() {
             </div>
           </motion.div>
 
-          {/* Contact + Actions */}
+          {/* Contact buttons */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.25, ease: ease.out }}
             className="space-y-3"
           >
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1">
+              {t("Need help?", "تحتاج مساعدة؟")}
+            </p>
             <a href="https://wa.me/201027671111" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2">
-                <MessageCircle className="w-4 h-4 text-green-500" />
-                {t("Contact Support on WhatsApp", "تواصل مع الدعم على واتساب")}
+              <Button
+                variant="outline"
+                className="w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2 border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/8 hover:border-green-500/50 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {t("WhatsApp Support", "واتساب الدعم")}
               </Button>
             </a>
             <a href="tel:+201027671111">
@@ -211,6 +217,15 @@ export default function OrderTrackingPage() {
                 +20 10 2767 1111
               </Button>
             </a>
+          </motion.div>
+
+          {/* Navigation — separated from contact group */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.35, ease: ease.out }}
+            className="pt-2 border-t border-border"
+          >
             <Link href="/">
               <Button variant="ghost" className="w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground">
                 <Home className="w-4 h-4" />

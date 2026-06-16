@@ -588,7 +588,7 @@ export default function MenuPage() {
                                 description: `${isRtl ? item.nameAr : item.name} · ${item.price} ${t("EGP", "ج.م")}`,
                               });
                             }}
-                            className="flex items-center gap-2 bg-white text-foreground font-bold text-sm px-5 py-2.5 rounded-full shadow-lg hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95"
+                            className="flex items-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-5 py-2.5 rounded-full shadow-lg hover:bg-primary/85 transition-colors active:scale-95"
                           >
                             <Plus className="w-4 h-4" />
                             {t("Add to Cart", "أضف للسلة")}
