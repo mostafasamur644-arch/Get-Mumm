@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -13,24 +14,27 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 
+// Home is kept eager — first paint is instant
 import Home from "@/pages/home";
-import MenuPage from "@/pages/menu";
-import MenuItemPage from "@/pages/menu/[id]";
-import ChefsPage from "@/pages/chefs";
-import BlogPage from "@/pages/blog";
-import BlogPostPage from "@/pages/blog/[slug]";
-import ForOfficesPage from "@/pages/for-offices";
-import AboutPage from "@/pages/about";
-import SubscriptionsPage from "@/pages/subscriptions";
-import ContactPage from "@/pages/contact";
-import PrivacyPage from "@/pages/privacy";
-import TermsPage from "@/pages/terms";
-import DeliveryAreasPage from "@/pages/delivery-areas";
-import PartnerPage from "@/pages/partner";
-import CheckoutPage from "@/pages/checkout";
-import OrderConfirmationPage from "@/pages/order-confirmation";
-import OrderTrackingPage from "@/pages/order-tracking";
-import NotFound from "@/pages/not-found";
+
+// All secondary pages are lazy-loaded — dramatically reduces initial bundle
+const MenuPage            = lazy(() => import("@/pages/menu"));
+const MenuItemPage        = lazy(() => import("@/pages/menu/[id]"));
+const ChefsPage           = lazy(() => import("@/pages/chefs"));
+const BlogPage            = lazy(() => import("@/pages/blog"));
+const BlogPostPage        = lazy(() => import("@/pages/blog/[slug]"));
+const ForOfficesPage      = lazy(() => import("@/pages/for-offices"));
+const AboutPage           = lazy(() => import("@/pages/about"));
+const SubscriptionsPage   = lazy(() => import("@/pages/subscriptions"));
+const ContactPage         = lazy(() => import("@/pages/contact"));
+const PrivacyPage         = lazy(() => import("@/pages/privacy"));
+const TermsPage           = lazy(() => import("@/pages/terms"));
+const DeliveryAreasPage   = lazy(() => import("@/pages/delivery-areas"));
+const PartnerPage         = lazy(() => import("@/pages/partner"));
+const CheckoutPage        = lazy(() => import("@/pages/checkout"));
+const OrderConfirmationPage = lazy(() => import("@/pages/order-confirmation"));
+const OrderTrackingPage   = lazy(() => import("@/pages/order-tracking"));
+const NotFound            = lazy(() => import("@/pages/not-found"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +45,14 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function PageSpinner() {
+  return (
+    <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+      <div className="w-9 h-9 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
+}
 
 function AnimatedRoutes() {
   const [location] = useLocation();
@@ -56,26 +68,28 @@ function AnimatedRoutes() {
         className="flex-1 flex flex-col"
         style={{ willChange: "opacity, transform, filter" }}
       >
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/menu" component={MenuPage} />
-          <Route path="/menu/:id" component={MenuItemPage} />
-          <Route path="/chefs" component={ChefsPage} />
-          <Route path="/blog" component={BlogPage} />
-          <Route path="/blog/:slug" component={BlogPostPage} />
-          <Route path="/for-offices" component={ForOfficesPage} />
-          <Route path="/about" component={AboutPage} />
-          <Route path="/subscriptions" component={SubscriptionsPage} />
-          <Route path="/contact" component={ContactPage} />
-          <Route path="/privacy" component={PrivacyPage} />
-          <Route path="/terms" component={TermsPage} />
-          <Route path="/delivery-areas" component={DeliveryAreasPage} />
-          <Route path="/partner" component={PartnerPage} />
-          <Route path="/checkout" component={CheckoutPage} />
-          <Route path="/order-confirmation" component={OrderConfirmationPage} />
-          <Route path="/order/:id" component={OrderTrackingPage} />
-          <Route component={NotFound} />
-        </Switch>
+        <Suspense fallback={<PageSpinner />}>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/menu" component={MenuPage} />
+            <Route path="/menu/:id" component={MenuItemPage} />
+            <Route path="/chefs" component={ChefsPage} />
+            <Route path="/blog" component={BlogPage} />
+            <Route path="/blog/:slug" component={BlogPostPage} />
+            <Route path="/for-offices" component={ForOfficesPage} />
+            <Route path="/about" component={AboutPage} />
+            <Route path="/subscriptions" component={SubscriptionsPage} />
+            <Route path="/contact" component={ContactPage} />
+            <Route path="/privacy" component={PrivacyPage} />
+            <Route path="/terms" component={TermsPage} />
+            <Route path="/delivery-areas" component={DeliveryAreasPage} />
+            <Route path="/partner" component={PartnerPage} />
+            <Route path="/checkout" component={CheckoutPage} />
+            <Route path="/order-confirmation" component={OrderConfirmationPage} />
+            <Route path="/order/:id" component={OrderTrackingPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );

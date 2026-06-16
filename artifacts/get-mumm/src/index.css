@@ -163,15 +163,34 @@
   }
 }
 
-/* ─── Custom Scrollbar ────────────────────────────────────────────────── */
+/* ─── Custom Scrollbar — adapts to light/dark mode ───────────────────── */
 ::-webkit-scrollbar        { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  {
-  background: hsl(var(--primary) / 0.45);
+
+/* Light mode — soft golden yellow thumb */
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.32);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.85);
+  background: hsl(var(--primary) / 0.72);
+}
+
+/* Dark mode — slightly brighter so thumb is visible on dark track */
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.52);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.90);
+}
+
+/* Firefox — thin scrollbar that adapts to mode */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.35) transparent;
+}
+.dark * {
+  scrollbar-color: hsl(var(--primary) / 0.55) transparent;
 }
 
 /* Hide scrollbar for horizontal filter strips */

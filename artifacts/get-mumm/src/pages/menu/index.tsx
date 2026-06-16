@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link, useSearch, useLocation } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
+import { WaveDivider } from "@/components/ui/WaveDivider";
 import {
   Search, X, SlidersHorizontal, Star, Clock,
   ChevronDown, Plus, Minus, ShoppingCart, ArrowUpDown,
@@ -180,7 +181,7 @@ export default function MenuPage() {
     <PageWrapper>
 
       {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <div className="bg-primary/8 pt-28 sm:pt-32 pb-10 border-b border-border">
+      <div className="bg-accent pt-28 sm:pt-32 pb-10">
         <div className="container mx-auto px-4 sm:px-6">
           <motion.div {...sectionReveal} className="text-center mb-8">
             <h1 className="text-3xl sm:text-5xl font-serif font-bold mb-3">
@@ -225,6 +226,8 @@ export default function MenuPage() {
           </motion.div>
         </div>
       </div>
+
+      <WaveDivider bg="var(--color-accent)" fill="var(--color-background)" flip />
 
       <div className="container mx-auto px-4 sm:px-6 py-8">
 

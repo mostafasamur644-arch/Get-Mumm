@@ -430,10 +430,7 @@ export default function Home() {
       <WaveDivider bg="var(--color-background)" fill="var(--color-secondary)" />
 
       {/* ─── For Offices Teaser ───────────────────────────────────────── */}
-      <motion.section
-        {...sectionReveal}
-        className="py-24 bg-secondary text-secondary-foreground overflow-hidden relative"
-      >
+      <section className="py-24 bg-secondary text-secondary-foreground overflow-hidden relative">
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
@@ -475,7 +472,7 @@ export default function Home() {
             </motion.div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       <WaveDivider bg="var(--color-secondary)" fill="var(--color-background)" flip />
 

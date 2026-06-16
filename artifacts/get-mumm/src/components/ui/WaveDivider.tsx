@@ -10,7 +10,13 @@ export function WaveDivider({ fill, bg, flip = false, height = 88, variant = "de
   return (
     <div
       className="relative w-full leading-[0] block pointer-events-none select-none"
-      style={{ height, backgroundColor: bg ?? "transparent" }}
+      style={{
+        height,
+        backgroundColor: bg ?? "transparent",
+        overflow: "hidden",
+        marginTop: "-2px",
+        marginBottom: "-2px",
+      }}
       aria-hidden="true"
     >
       {variant === "layered" ? (
